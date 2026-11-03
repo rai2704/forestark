@@ -6,6 +6,7 @@ use App\Mail\ConfirmSubscriptionMail;
 use App\Mail\NewsletterMail;
 use App\Models\Block;
 use App\Models\ContactMessage;
+use App\Models\Entry;
 use App\Models\Language;
 use App\Models\MenuItem;
 use App\Models\Newsletter;
@@ -324,32 +325,106 @@ class PortalTest extends TestCase
     public function test_block_items_have_listing_and_their_own_edit_screen(): void
     {
         $this->actingAs($this->admin());
-        $hero = Block::where('type', 'hero_slider')->first();
-        $this->get('/admin/banners')->assertRedirect("/admin/blocks/{$hero->id}/edit");
-
-        $this->get("/admin/blocks/{$hero->id}/edit")->assertOk()->assertSee('Forest Ark Investiments')->assertSee("/admin/blocks/{$hero->id}/itens/items/0/edit", false)->assertDontSee('name="data[items]', false);
-        $this->get("/admin/blocks/{$hero->id}/itens/items/0/edit")->assertOk()->assertSee('name="data[title][en]"', false);
-        $this->get("/admin/blocks/{$hero->id}/itens/items/99/edit")->assertNotFound();
-        $this->get("/admin/blocks/{$hero->id}/itens/inexistente/novo")->assertNotFound();
-
-        $this->post("/admin/blocks/{$hero->id}/itens/items", ['data' => ['title' => ['pt' => 'Novo banner'], 'image' => 'uploads/site/logo.png', 'show_text' => 1]])->assertRedirect("/admin/blocks/{$hero->id}/edit");
-        $this->assertCount(4, $hero->fresh()->data['items']);
-
-        $this->put("/admin/blocks/{$hero->id}/itens/items/3", ['data' => ['title' => ['pt' => 'Editado'], 'image' => 'uploads/site/logo.png']]);
-        $this->assertSame('Editado', $hero->fresh()->data['items'][3]['title']['pt']);
-        $this->assertFalse($hero->fresh()->data['items'][3]['show_text']);
-
-        $this->post("/admin/blocks/{$hero->id}/itens/items/3/move", ['direction' => 'up']);
-        $this->assertSame('Editado', $hero->fresh()->data['items'][2]['title']['pt']);
-
-        $this->delete("/admin/blocks/{$hero->id}/itens/items/2");
-        $this->assertCount(3, $hero->fresh()->data['items']);
-
         $about = Block::where('type', 'about_accordion')->first();
-        $count = count($about->data['items']);
+        $url = "/admin/blocks/{$about->id}/itens/documents";
+
+        $this->post($url, ['data' => ['label' => ['pt' => 'Contrato'], 'url' => 'https://example.com/a.pdf']])->assertRedirect("/admin/blocks/{$about->id}/edit");
+        $this->post($url, ['data' => ['label' => ['pt' => 'Laudo'], 'url' => 'https://example.com/b.pdf']]);
+        $this->get("/admin/blocks/{$about->id}/edit")->assertOk()->assertSee('Contrato')->assertSee("$url/0/edit", false);
+        $this->get("$url/0/edit")->assertOk()->assertSee('name="data[label][en]"', false);
+        $this->get("$url/99/edit")->assertNotFound();
+        $this->get("/admin/blocks/{$about->id}/itens/inexistente/novo")->assertNotFound();
+
+        $this->put("$url/1", ['data' => ['label' => ['pt' => 'Editado'], 'url' => 'https://example.com/b.pdf']]);
+        $this->post("$url/1/move", ['direction' => 'up']);
+        $this->assertSame('Editado', $about->fresh()->data['documents'][0]['label']['pt']);
+        $this->delete("$url/0");
+        $this->assertCount(1, $about->fresh()->data['documents']);
+
         $this->put("/admin/blocks/{$about->id}", ['data' => ['title' => ['pt' => 'Plano']]]);
         $this->assertSame('Plano', $about->fresh()->data['title']['pt']);
-        $this->assertCount($count, $about->fresh()->data['items']);
+        $this->assertCount(1, $about->fresh()->data['documents']);
+        $this->assertSame('plan', $about->fresh()->source());
+    }
+
+    public function test_existing_content_moved_to_modules_without_loss(): void
+    {
+        foreach (['banners' => 3, 'testimonials' => 2, 'plan' => 4, 'faq' => 5, 'news' => 5, 'partners' => 5, 'success_cases' => 3, 'portfolio' => 4, 'values' => 3, 'certifications' => 11, 'services' => 4, 'subjects' => 4] as $collection => $count) {
+            $this->assertSame($count, Entry::where('collection', $collection)->count(), $collection);
+        }
+        $this->get('/')->assertSee('Forest Ark Investiments')->assertSee('COMERCIALIZAÇÃO DA MADEIRA')->assertSee('Um Tesouro da Amazônia')->assertSee('Lemafon');
+        $this->get('/en/a-empresa')->assertSee('Principle:')->assertSee('Certifications');
+        $this->get('/servicos')->assertSee('Baixar PMFS');
+        $this->get('/contato')->assertSee('Vendas');
+        $this->get('/sobre-nos')->assertOk()->assertSee('Contrato de Concessão Florestal');
+        $this->get('/en/sobre-nos')->assertSee('About Us');
+    }
+
+    public function test_every_module_has_full_crud_with_its_own_permission(): void
+    {
+        $user = $this->admin();
+        $this->actingAs($user);
+
+        foreach (array_keys(config('portal.collections')) as $collection) {
+            $base = "/admin/conteudo/$collection";
+            $this->get($base)->assertOk();
+            $this->get("$base/novo")->assertOk();
+            $first = config("portal.collections.$collection.fields");
+            $name = collect($first)->firstWhere('tr', true)['name'];
+            $this->post($base, ['is_published' => 1, 'data' => [$name => ['pt' => 'Registro E2E']]])->assertRedirect($base);
+            $entry = Entry::where('collection', $collection)->latest('id')->first();
+            $this->assertStringContainsString('Registro E2E', $entry->data[$name]['pt']);
+
+            $this->get("$base/{$entry->id}/edit")->assertOk();
+            $this->put("$base/{$entry->id}", ['data' => [$name => ['pt' => 'Alterado']]])->assertRedirect($base);
+            $this->assertFalse($entry->fresh()->is_published);
+            $this->post("$base/{$entry->id}/toggle");
+            $this->assertTrue($entry->fresh()->is_published);
+            $this->delete("$base/{$entry->id}");
+            $this->assertNull($entry->fresh());
+        }
+
+        $this->get('/admin/conteudo/news')->assertSee('Árvores Imponentes')->assertSee('Vida Selvagem');
+        $this->get('/admin/conteudo/inexistente')->assertNotFound();
+        $news = Entry::where('collection', 'news')->first();
+        $this->get("/admin/conteudo/banners/{$news->id}/edit")->assertNotFound();
+
+        $limited = $this->admin(['news' => ['acessar' => true]]);
+        $this->actingAs($limited);
+        $this->get('/admin/conteudo/news')->assertOk()->assertDontSee('/admin/conteudo/news/novo', false);
+        $this->get('/admin/conteudo/news/novo')->assertForbidden();
+        $this->get('/admin/conteudo/banners')->assertForbidden();
+        $this->delete("/admin/conteudo/news/{$news->id}")->assertForbidden();
+    }
+
+    public function test_entry_detail_page_exists_only_with_full_content_and_when_published(): void
+    {
+        $entry = Entry::where('collection', 'news')->first();
+        $this->get("/noticias/{$entry->slug}")->assertNotFound();
+
+        $data = $entry->data;
+        $data['body'] = ['pt' => '<p>Texto completo</p>', 'en' => '<p>Full text</p>'];
+        $entry->update(['data' => $data]);
+
+        $this->get("/noticias/{$entry->slug}")->assertOk()->assertSee('Texto completo');
+        $this->get("/en/noticias/{$entry->slug}")->assertOk()->assertSee('Full text');
+        $this->get('/noticias')->assertSee("/noticias/{$entry->slug}", false);
+        $this->get('/sitemap.xml')->assertSee("/noticias/{$entry->slug}", false);
+
+        $entry->update(['is_published' => false]);
+        $this->get("/noticias/{$entry->slug}")->assertNotFound();
+        $this->get('/noticias')->assertDontSee("/noticias/{$entry->slug}", false);
+    }
+
+    public function test_block_source_can_be_switched(): void
+    {
+        $this->actingAs($this->admin());
+        $block = Block::where('type', 'cards')->whereHas('page', fn ($q) => $q->where('slug', 'noticias'))->first();
+
+        $this->put("/admin/blocks/{$block->id}", ['source' => 'portfolio'])->assertSessionHasNoErrors();
+        $this->assertSame('portfolio', $block->fresh()->source());
+        $this->assertSame('Últimas notícias e atualizações', $block->fresh()->data['title']['pt']);
+        $this->put("/admin/blocks/{$block->id}", ['source' => 'banners'])->assertSessionHasErrors('source');
     }
 
     public function test_every_image_field_informs_its_ideal_size(): void
@@ -367,13 +442,16 @@ class PortalTest extends TestCase
         foreach (config('portal.blocks') as $block) {
             $walk($block['fields']);
         }
+        foreach (config('portal.collections') as $collection) {
+            $walk($collection['fields']);
+        }
         foreach (config('portal.settings_groups') as $fields) {
             $walk($fields);
         }
 
         $this->actingAs($this->admin());
-        $hero = Block::where('type', 'hero_slider')->first();
-        $this->get("/admin/blocks/{$hero->id}/itens/items/0/edit")->assertSee('Tamanho ideal: 1920 × 1000 px')->assertSee('Imagem atual: 1000 × 500 px')->assertSee('menor que o ideal');
+        $banner = Entry::where('collection', 'banners')->first();
+        $this->get("/admin/conteudo/banners/{$banner->id}/edit")->assertSee('Tamanho ideal: 1920 × 1000 px')->assertSee('Imagem atual: 1000 × 500 px')->assertSee('menor que o ideal');
         $this->get('/admin/configuracoes/identidade')->assertSee('Tamanho ideal: 200 × 103 px');
     }
 
@@ -419,10 +497,10 @@ class PortalTest extends TestCase
         $this->assertStringNotContainsString('<script', $block->data['body']['pt']);
         $this->assertSame('E', $block->data['title']['en']);
 
-        $hero = Block::where('type', 'hero_slider')->first();
+        $banner = Entry::where('collection', 'banners')->first();
         $evil = UploadedFile::fake()->createWithContent('shell.php', '<?php echo 1;');
-        $this->put("/admin/blocks/{$hero->id}/itens/items/0", ['data' => ['image' => ''], 'uploads' => ['image' => $evil]])->assertSessionHasErrors('image');
-        $this->assertCount(3, $hero->fresh()->data['items']);
+        $this->put("/admin/conteudo/banners/{$banner->id}", ['data' => ['image' => ''], 'uploads' => ['image' => $evil]])->assertSessionHasErrors('image');
+        $this->assertNotSame('', $banner->fresh()->data['image']);
     }
 
     public function test_last_full_access_user_cannot_be_removed(): void

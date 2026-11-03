@@ -1,4 +1,4 @@
-<div class="relative bg-soft py-[90px] lg:pt-[135px] lg:pb-[150px]">
+<div class="section-gap relative bg-soft py-[90px] lg:pt-[135px] lg:pb-[150px]">
     @if ($c['image'])
         <img data-wow style="animation-delay:.3s" src="{{ media($c['image']) }}" alt="" class="absolute bottom-0 left-0 z-[1] max-lg:hidden">
     @endif

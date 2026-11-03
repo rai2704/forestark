@@ -3,10 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Block;
+use App\Models\Entry;
 use App\Models\Language;
 use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\SiteSetting;
+use App\Support\CollectionMigrator;
 use App\Support\Site;
 use Illuminate\Database\Seeder;
 
@@ -36,6 +38,10 @@ class PortalContentSeeder extends Seeder
         $this->services();
         $this->contact();
         $this->extraPages();
+
+        Entry::query()->delete();
+        Page::where('slug', 'sobre-nos')->delete();
+        CollectionMigrator::run();
     }
 
     private function settings(): void

@@ -45,10 +45,15 @@ class Content
         $image = collect($fields)->firstWhere('type', 'image');
         $title = '';
         foreach ($fields as $f) {
-            if ($f['tr'] && in_array($f['type'], ['text', 'textarea', 'html'], true) && trim(strip_tags((string) $resolved[$f['name']])) !== '') {
+            if ($f['name'] !== 'by' && $f['tr'] && in_array($f['type'], ['text', 'textarea', 'html'], true) && trim(strip_tags((string) $resolved[$f['name']])) !== '') {
                 $title = trim(html_entity_decode(strip_tags((string) $resolved[$f['name']])));
                 break;
             }
+        }
+
+        $title = $title ?: (string) ($resolved['author'] ?? '');
+        if (! empty($resolved['highlight'])) {
+            $title = trim($title.' '.$resolved['highlight']);
         }
 
         return ['image' => $image ? ($resolved[$image['name']] ?? null) : null, 'title' => Str::limit($title, 90)];

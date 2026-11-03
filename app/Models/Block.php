@@ -17,6 +17,14 @@ class Block extends Model
         return $this->belongsTo(Page::class);
     }
 
+    /** Módulo de onde o bloco puxa os itens, ou null se os itens são do próprio bloco. */
+    public function source(): ?string
+    {
+        $source = $this->data['source'] ?? null;
+
+        return $source && config("portal.collections.$source") ? $source : null;
+    }
+
     public function schema(): array
     {
         return config("portal.blocks.{$this->type}", ['label' => $this->type, 'fields' => []]);
@@ -24,6 +32,13 @@ class Block extends Model
 
     public function content(): array
     {
-        return Content::resolve($this->schema()['fields'], $this->data ?? []);
+        $out = Content::resolve($this->schema()['fields'], $this->data ?? []);
+
+        if ($source = $this->source()) {
+            $itemFields = collect($this->schema()['fields'])->firstWhere('name', 'items')['fields'] ?? [];
+            $out['items'] = Entry::of($source)->published()->get()->map(fn (Entry $e) => $e->toItem($itemFields))->all();
+        }
+
+        return $out;
     }
 }

@@ -18,6 +18,10 @@ class AdminAccess
             return redirect()->route('admin.login');
         }
 
+        if ($module === 'collection') {
+            $module = (string) $request->route('collection');
+        }
+
         abort_if($module && ! $user->canAccess($module, $action), 403, 'Sem permissão para esta ação.');
 
         return $next($request);

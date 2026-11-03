@@ -7,7 +7,86 @@ $s = fn (string $name, string $label, string $type = 'text') => ['name' => $name
 $img = fn (string $name, string $label, int $w, int $h, string $note = '') => ['name' => $name, 'label' => $label, 'type' => 'image', 'tr' => false, 'size' => [$w, $h], 'note' => $note];
 $items = fn (string $label, array $fields) => ['name' => 'items', 'label' => $label, 'type' => 'repeater', 'tr' => false, 'fields' => $fields];
 
-return [
+$by = $t('by', 'Prefixo do autor (ex.: Por)');
+$body = $t('body', 'Conteúdo completo (cria a página de detalhe)', 'html');
+
+// Módulos de conteúdo: cada um vira um CRUD no admin e uma linha na grade de permissões.
+$collections = [
+    'banners' => ['label' => 'Banners', 'singular' => 'Banner', 'icon' => 'fa-images', 'group' => 'Conteúdo', 'fields' => [
+        $img('image', 'Imagem', 1920, 1000, 'Mantenha o principal no centro: as laterais são cortadas em telas menores.'),
+        $t('title', 'Título'),
+        $t('text', 'Texto', 'textarea'),
+        $s('show_text', 'Mostrar título e texto', 'toggle'),
+        $s('show_button', 'Mostrar botão', 'toggle'),
+        $t('button', 'Texto do botão'),
+        $s('link', 'Link do botão', 'url'),
+    ]],
+    'news' => ['label' => 'Notícias', 'singular' => 'Notícia', 'icon' => 'fa-newspaper', 'group' => 'Conteúdo', 'detail' => 'noticias', 'dated' => true, 'fields' => [
+        $img('image', 'Imagem', 1000, 667, 'Use a mesma proporção em todas para ficarem alinhadas.'),
+        $t('title', 'Título'),
+        $t('highlight', 'Destaque do título'),
+        $t('text', 'Resumo', 'textarea'),
+        $body,
+        $by,
+        $s('author', 'Autor'),
+        $s('author_url', 'Link do autor', 'url'),
+        $t('badge', 'Etiqueta sobre a imagem'),
+    ]],
+    'services' => ['label' => 'Serviços', 'singular' => 'Serviço', 'icon' => 'fa-briefcase', 'group' => 'Conteúdo', 'detail' => 'servicos', 'fields' => [
+        $img('image', 'Imagem', 450, 232, 'Horizontal, em PNG com fundo transparente.'),
+        $t('title', 'Título'),
+        $body,
+        $t('button', 'Texto do botão do documento'),
+        $s('file', 'Documento (PDF ou imagem)', 'file'),
+    ]],
+    'success_cases' => ['label' => 'Casos de Sucesso', 'singular' => 'Caso de Sucesso', 'icon' => 'fa-trophy', 'group' => 'Conteúdo', 'detail' => 'casos-de-sucesso', 'fields' => [
+        $img('image', 'Imagem', 1000, 667, 'Use a mesma proporção em todos para ficarem alinhados.'),
+        $t('title', 'Título'),
+        $t('text', 'Resumo', 'textarea'),
+        $body,
+    ]],
+    'portfolio' => ['label' => 'Portfólio', 'singular' => 'Item do Portfólio', 'icon' => 'fa-layer-group', 'group' => 'Conteúdo', 'detail' => 'portifolio', 'fields' => [
+        $img('image', 'Imagem', 1000, 667, 'Use a mesma proporção em todos para ficarem alinhados.'),
+        $t('title', 'Título'),
+        $t('text', 'Resumo', 'textarea'),
+        $body,
+    ]],
+    'partners' => ['label' => 'Parceiros', 'singular' => 'Parceiro', 'icon' => 'fa-handshake', 'group' => 'Conteúdo', 'fields' => [
+        $img('image', 'Logo', 1000, 667, 'Use a mesma proporção em todos para ficarem alinhados.'),
+        $t('badge', 'Nome (etiqueta sobre a imagem)'),
+    ]],
+    'testimonials' => ['label' => 'Depoimentos', 'singular' => 'Depoimento', 'icon' => 'fa-comment-dots', 'group' => 'Conteúdo', 'fields' => [
+        $t('text', 'Texto', 'html'),
+        $t('name', 'Nome'),
+        $t('role', 'Cargo'),
+    ]],
+    'plan' => ['label' => 'Plano de Negócio', 'singular' => 'Tópico do Plano', 'icon' => 'fa-diagram-project', 'group' => 'Conteúdo', 'fields' => [
+        $t('title', 'Título'),
+        $t('body', 'Conteúdo', 'html'),
+    ]],
+    'faq' => ['label' => 'Perguntas Frequentes', 'singular' => 'Pergunta', 'icon' => 'fa-circle-question', 'group' => 'Conteúdo', 'fields' => [
+        $t('title', 'Pergunta'),
+        $t('body', 'Resposta', 'html'),
+    ]],
+    'values' => ['label' => 'Princípios e Valores', 'singular' => 'Princípio ou Valor', 'icon' => 'fa-scale-balanced', 'group' => 'A Empresa', 'fields' => [
+        $t('title', 'Título'),
+        $t('text', 'Texto', 'textarea'),
+        $t('button', 'Texto do link'),
+        $s('link', 'Link', 'url'),
+    ]],
+    'certifications' => ['label' => 'Certificações', 'singular' => 'Certificação', 'icon' => 'fa-certificate', 'group' => 'A Empresa', 'fields' => [
+        $img('image', 'Imagem', 1000, 667, 'Certificados verticais também são aceitos; ficam mais altos na listagem do site.'),
+        $t('title', 'Título (opcional)'),
+        $by,
+        $s('author', 'Emitida por'),
+        $s('author_url', 'Link de quem emitiu', 'url'),
+    ]],
+    'subjects' => ['label' => 'Assuntos do Contato', 'singular' => 'Assunto', 'icon' => 'fa-list-check', 'group' => 'Contato', 'fields' => [
+        $t('label', 'Assunto'),
+    ]],
+];
+
+$config = [
     'developer' => [
         'name' => 'GAPI Tecnologia & Sistemas',
         'slogan' => 'Soluções Inteligentes em Arquitetura Web',
@@ -17,11 +96,11 @@ return [
     'actions' => ['acessar' => 'Acessar', 'incluir' => 'Incluir', 'editar' => 'Editar', 'excluir' => 'Excluir'],
 
     'modules' => [
-        'pages' => ['label' => 'Páginas, Blocos e Banners', 'group' => 'Conteúdo'],
-        'menus' => ['label' => 'Menus', 'group' => 'Conteúdo'],
-        'messages' => ['label' => 'Contatos', 'group' => 'Mensagens'],
-        'subscribers' => ['label' => 'Inscritos', 'group' => 'Mensagens'],
-        'newsletters' => ['label' => 'Newsletter', 'group' => 'Mensagens'],
+        'pages' => ['label' => 'Páginas e Blocos', 'group' => 'Estrutura do Site'],
+        'menus' => ['label' => 'Menus', 'group' => 'Estrutura do Site'],
+        'messages' => ['label' => 'Mensagens Recebidas', 'group' => 'Contato'],
+        'subscribers' => ['label' => 'Inscritos', 'group' => 'Contato'],
+        'newsletters' => ['label' => 'Newsletter', 'group' => 'Contato'],
         'settings' => ['label' => 'Configurações', 'group' => 'Sistema'],
         'languages' => ['label' => 'Idiomas', 'group' => 'Sistema'],
         'users' => ['label' => 'Usuários', 'group' => 'Sistema'],
@@ -174,7 +253,34 @@ return [
         ]],
         'rich_text' => ['label' => 'Texto livre', 'fields' => [
             $t('title', 'Título'),
+            $img('image', 'Imagem (opcional)', 1200, 800, 'Aparece acima do texto.'),
             $t('body', 'Conteúdo', 'html'),
         ]],
     ],
 ];
+
+$config['collections'] = $collections;
+
+// Módulos de permissão: os fixos mais um para cada módulo de conteúdo.
+$modules = $config['modules'];
+$config['modules'] = [];
+foreach ($collections as $key => $def) {
+    $config['modules'][$key] = ['label' => $def['label'], 'group' => $def['group']];
+}
+$config['modules'] += $modules;
+
+// De onde cada tipo de bloco pode puxar os itens.
+foreach ([
+    'hero_slider' => ['banners'],
+    'testimonials' => ['testimonials'],
+    'about_accordion' => ['plan', 'faq'],
+    'faq' => ['faq', 'plan'],
+    'cards' => ['news', 'success_cases', 'portfolio', 'partners', 'certifications'],
+    'features' => ['values'],
+    'downloads' => ['services'],
+    'contact_form' => ['subjects'],
+] as $type => $sources) {
+    $config['blocks'][$type]['sources'] = $sources;
+}
+
+return $config;

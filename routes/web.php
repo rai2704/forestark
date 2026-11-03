@@ -32,7 +32,7 @@ Route::prefix('admin')->name('admin.')->group(function () use ($can, $crud) {
 
         $crud('pages', Admin\PageController::class, 'pages');
         Route::get('pages/{page}/blocos', [Admin\PageController::class, 'blocks'])->name('pages.blocks')->middleware($can('pages'));
-        Route::get('banners', [Admin\BlockController::class, 'banners'])->name('banners')->middleware($can('pages'));
+        Route::get('atalho/{slug}', [Admin\PageController::class, 'shortcut'])->whereIn('slug', ['sobre-nos', 'a-empresa', 'contato'])->name('shortcut')->middleware($can('pages'));
 
         Route::post('pages/{page}/blocks', [Admin\BlockController::class, 'store'])->name('blocks.store')->middleware($can('pages', 'incluir'));
         Route::post('blocks/{block}/duplicate', [Admin\BlockController::class, 'duplicate'])->name('blocks.duplicate')->middleware($can('pages', 'incluir'));
@@ -49,6 +49,18 @@ Route::prefix('admin')->name('admin.')->group(function () use ($can, $crud) {
         Route::get('blocks/{block}/itens/{repeater}/novo', [Admin\BlockItemController::class, 'create'])->name('blocks.items.create')->middleware($can('pages', 'incluir'));
         Route::post('blocks/{block}/itens/{repeater}', [Admin\BlockItemController::class, 'store'])->name('blocks.items.store')->middleware($can('pages', 'incluir'));
         Route::delete('blocks/{block}/itens/{repeater}/{index}', [Admin\BlockItemController::class, 'destroy'])->whereNumber('index')->name('blocks.items.destroy')->middleware($can('pages', 'excluir'));
+
+        // Módulos de conteúdo: a permissão é a do próprio módulo.
+        Route::prefix('conteudo/{collection}')->whereIn('collection', array_keys(config('portal.collections')))->name('entries.')->group(function () use ($can) {
+            Route::get('/', [Admin\EntryController::class, 'index'])->name('index')->middleware($can('collection'));
+            Route::get('novo', [Admin\EntryController::class, 'create'])->name('create')->middleware($can('collection', 'incluir'));
+            Route::post('/', [Admin\EntryController::class, 'store'])->name('store')->middleware($can('collection', 'incluir'));
+            Route::get('{entry}/edit', [Admin\EntryController::class, 'edit'])->name('edit')->middleware($can('collection', 'editar'));
+            Route::put('{entry}', [Admin\EntryController::class, 'update'])->name('update')->middleware($can('collection', 'editar'));
+            Route::post('{entry}/toggle', [Admin\EntryController::class, 'toggle'])->name('toggle')->middleware($can('collection', 'editar'));
+            Route::post('{entry}/move', [Admin\EntryController::class, 'move'])->name('move')->middleware($can('collection', 'editar'));
+            Route::delete('{entry}', [Admin\EntryController::class, 'destroy'])->name('destroy')->middleware($can('collection', 'excluir'));
+        });
 
         $crud('menus', Admin\MenuController::class, 'menus');
         Route::post('menus/{menu}/move', [Admin\MenuController::class, 'move'])->name('menus.move')->middleware($can('menus', 'editar'));

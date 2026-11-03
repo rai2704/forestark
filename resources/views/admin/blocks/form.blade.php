@@ -21,7 +21,31 @@
     </form>
 @endif
 
+@if (! empty($block->schema()['sources']))
+    <div class="card shadow-sm mb-4">
+        <div class="card-header admin-card-header"><i class="fas fa-database me-2"></i>De onde vêm os itens</div>
+        <div class="card-body">
+            <form method="post" action="{{ route('admin.blocks.update', $block) }}" class="row g-2 align-items-center" data-source-form>
+                @csrf @method('PUT')
+                <div class="col-sm-6 col-lg-4">
+                    <select name="source" aria-label="Origem dos itens" class="form-select">
+                        <option value="">Itens próprios deste bloco</option>
+                        @foreach ($block->schema()['sources'] as $key)
+                            <option value="{{ $key }}" @selected($block->source() === $key)>Módulo: {{ config("portal.collections.$key.label") }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto"><button class="btn-moc btn"><i class="fas fa-save me-1"></i>Aplicar</button></div>
+                @if ($block->source() && $me->canAccess($block->source()))
+                    <div class="col-auto"><a href="{{ route('admin.entries.index', $block->source()) }}" class="btn-moc-outline btn"><i class="fas fa-list me-1"></i>Gerenciar {{ config('portal.collections.'.$block->source().'.label') }}</a></div>
+                @endif
+            </form>
+        </div>
+    </div>
+@endif
+
 @foreach ($repeaters as $field)
+    @continue($field['name'] === 'items' && $block->source())
     @php
         $rows = array_values((array) (($block->data ?? [])[$field['name']] ?? []));
         $showImage = collect($field['fields'])->contains('type', 'image');

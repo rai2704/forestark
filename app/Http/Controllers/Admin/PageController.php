@@ -20,6 +20,16 @@ class PageController extends Controller
         return view('admin.pages.blocks', ['page' => $page->load('blocks')]);
     }
 
+    /** Atalhos do menu lateral para as páginas de conteúdo único. */
+    public function shortcut(string $slug)
+    {
+        $page = Page::where('slug', $slug)->firstOrFail();
+        $type = ['sobre-nos' => 'rich_text', 'contato' => 'contact_form'][$slug] ?? null;
+        $block = $type ? $page->blocks()->where('type', $type)->first() : null;
+
+        return $block ? redirect()->route('admin.blocks.edit', $block) : redirect()->route('admin.pages.blocks', $page);
+    }
+
     public function create()
     {
         return view('admin.pages.form', ['page' => new Page(['data' => [], 'is_published' => true])]);
@@ -56,7 +66,7 @@ class PageController extends Controller
     {
         $isHome = $page?->slug === '';
         $slug = $isHome ? '' : $request->validate([
-            'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn(['admin', 'uploads', 'build', 'contato-enviar', 'inscricao', 'up', 'mapa-do-site', 'flags', 'newsletter']), Rule::unique('pages', 'slug')->ignore($page?->id)],
+            'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn(['admin', 'uploads', 'build', 'contato-enviar', 'inscricao', 'up', 'mapa-do-site', 'flags', 'newsletter', 'sitemap']), Rule::unique('pages', 'slug')->ignore($page?->id)],
         ])['slug'];
 
         return [
