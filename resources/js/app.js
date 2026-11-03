@@ -1,4 +1,7 @@
+import './a11y';
+
 document.documentElement.classList.add('js');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Revela elementos com animação ao entrarem na tela
 const wow = new IntersectionObserver((entries) => {
@@ -25,8 +28,9 @@ window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 toTop?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-document.querySelector('[data-menu-toggle]')?.addEventListener('click', () => {
-    document.querySelector('[data-menu-list]')?.classList.toggle('max-lg:hidden');
+document.querySelector('[data-menu-toggle]')?.addEventListener('click', (e) => {
+    const hidden = document.querySelector('[data-menu-list]')?.classList.toggle('max-lg:hidden');
+    e.currentTarget.setAttribute('aria-expanded', String(!hidden));
 });
 
 // Carrossel: rotaciona os itens em loop, como o Owl Carousel do tema
@@ -47,7 +51,7 @@ document.querySelectorAll('[data-carousel]').forEach((root) => {
             return;
         }
         busy = true;
-        const step = track.children[0].getBoundingClientRect().width + gap();
+        const step = track.children[0].offsetWidth + gap();
         const finish = () => {
             track.style.transition = 'none';
             track.style.transform = '';
@@ -72,7 +76,11 @@ document.querySelectorAll('[data-carousel]').forEach((root) => {
     let paused = false;
     root.addEventListener('mouseenter', () => { paused = true; });
     root.addEventListener('mouseleave', () => { paused = false; });
-    setInterval(() => { if (!paused && !document.hidden) slide(1); }, 4000);
+    root.addEventListener('focusin', () => { paused = true; });
+    root.addEventListener('focusout', () => { paused = false; });
+    if (!reducedMotion) {
+        setInterval(() => { if (!paused && !document.hidden) slide(1); }, 4000);
+    }
 });
 
 // Banner: transição em mosaico, como o Camera Slider do tema
@@ -98,7 +106,8 @@ document.querySelectorAll('[data-hero]').forEach((hero) => {
         grid.style.gridTemplate = `repeat(${ROWS}, 1fr) / repeat(${COLS}, 1fr)`;
 
         const cells = [];
-        const { width, height } = hero.getBoundingClientRect();
+        const width = hero.offsetWidth;
+        const height = hero.offsetHeight;
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
                 const cell = document.createElement('div');
@@ -121,5 +130,7 @@ document.querySelectorAll('[data-hero]').forEach((hero) => {
 
     hero.querySelector('[data-next]')?.addEventListener('click', () => show((current + 1) % slides.length));
     hero.querySelector('[data-prev]')?.addEventListener('click', () => show((current - 1 + slides.length) % slides.length));
-    setInterval(() => { if (!document.hidden) show((current + 1) % slides.length); }, 5650);
+    if (!reducedMotion) {
+        setInterval(() => { if (!document.hidden) show((current + 1) % slides.length); }, 5650);
+    }
 });

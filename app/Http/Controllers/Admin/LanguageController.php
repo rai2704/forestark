@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class LanguageController extends Controller
 {
+    private const FLAG_RULE = ['required', 'string', 'size:2', 'regex:/^[a-z]{2}$/'];
+
     public function index()
     {
         return view('admin.languages', ['languages' => Language::orderBy('position')->get()]);
@@ -20,6 +22,7 @@ class LanguageController extends Controller
         $data = $request->validate([
             'code' => ['required', 'regex:/^[a-z]{2}(-[A-Z]{2})?$/', 'unique:languages,code', Rule::notIn(['admin', 'up'])],
             'name' => 'required|string|max:50',
+            'flag' => self::FLAG_RULE,
         ]);
         abort_if(Page::where('slug', $data['code'])->exists(), 422, 'Já existe uma página com esse endereço.');
         Language::create($data + ['position' => (int) Language::max('position') + 1, 'is_active' => true]);
@@ -29,7 +32,7 @@ class LanguageController extends Controller
 
     public function update(Request $request, Language $language)
     {
-        $data = $request->validate(['name' => 'required|string|max:50', 'position' => 'required|integer|min:0']);
+        $data = $request->validate(['name' => 'required|string|max:50', 'flag' => self::FLAG_RULE, 'position' => 'required|integer|min:0']);
         $data['is_active'] = $language->is_default || $request->boolean('is_active');
         $language->update($data);
 

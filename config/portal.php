@@ -6,6 +6,12 @@ $s = fn (string $name, string $label, string $type = 'text') => ['name' => $name
 $items = fn (string $label, array $fields) => ['name' => 'items', 'label' => $label, 'type' => 'repeater', 'tr' => false, 'fields' => $fields];
 
 return [
+    'developer' => [
+        'name' => 'GAPI Tecnologia & Sistemas',
+        'slogan' => 'Soluções Inteligentes em Arquitetura Web',
+        'url' => 'https://gapitecnologia.com.br',
+    ],
+
     'modules' => [
         'pages' => 'Páginas e blocos',
         'menus' => 'Menus',

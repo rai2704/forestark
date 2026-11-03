@@ -56,4 +56,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::post('contato-enviar', [SiteController::class, 'contact'])->middleware('throttle:5,1')->name('site.contact');
 Route::post('inscricao', [SiteController::class, 'subscribe'])->middleware('throttle:5,1')->name('site.subscribe');
 
+Route::get('sitemap.xml', [SiteController::class, 'sitemapXml'])->name('site.sitemap');
+
 Route::get('{path?}', [SiteController::class, 'show'])->where('path', '.*')->name('site.page');

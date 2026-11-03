@@ -16,6 +16,13 @@ class SiteController extends Controller
         [$locale, $slug] = Site::splitPath($path);
         app()->setLocale($locale);
 
+        if ($slug === 'mapa-do-site') {
+            return view('site.sitemap', [
+                'slug' => $slug,
+                'links' => $this->publishedPages()->map(fn (Page $p) => ['slug' => $p->slug, 'title' => $p->content()['title']]),
+            ]);
+        }
+
         $page = Page::where('slug', $slug)->where('is_published', true)->first();
         abort_unless($page, 404);
 
@@ -25,6 +32,18 @@ class SiteController extends Controller
             'blocks' => $page->blocks()->where('is_visible', true)->get(),
             'slug' => $slug,
         ]);
+    }
+
+    public function sitemapXml()
+    {
+        return response()
+            ->view('site.sitemap-xml', ['pages' => $this->publishedPages(), 'languages' => Site::languages()])
+            ->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    private function publishedPages()
+    {
+        return Page::where('is_published', true)->orderBy('slug')->get();
     }
 
     public function contact(Request $request)

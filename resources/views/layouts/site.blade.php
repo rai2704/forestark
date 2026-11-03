@@ -22,6 +22,7 @@
     @endforeach
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=open-sans:300,400,600,700|tinos:400,400i,700" rel="stylesheet">
+    @include('partials.a11y-head')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>:root{
         @foreach (['brand', 'header', 'footer', 'footer_bottom'] as $key)
@@ -30,15 +31,20 @@
     }</style>
 </head>
 <body class="overflow-x-hidden">
+<a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-white focus:p-3 focus:text-black">{{ __('site.skip') }}</a>
 <header class="relative">
     <div class="bg-white py-2.5 text-[13px]">
         <div class="ctn md:flex md:justify-between max-md:text-center">
             <p class="leading-[25px]">{{ $site['label_email'] }}: <a href="mailto:{{ $site['email'] }}" class="transition hover:text-brand">{{ $site['email'] }}</a></p>
             <p class="leading-[25px]">
+                @include('partials.a11y-controls', ['contrastIcon' => '<i class="fa fa-contrast"></i>'])
+                <a href="{{ Site::url('mapa-do-site') }}" title="{{ __('site.sitemap') }}" aria-label="{{ __('site.sitemap') }}" class="mx-1 align-middle transition hover:text-brand"><i class="fa fa-sitemap"></i></a>
                 @if ($languages->count() > 1)
-                    <span class="mr-3 inline-flex gap-1.5" aria-label="Idioma">
+                    <span role="group" aria-label="{{ __('site.language') }}" class="mx-2 inline-flex items-center gap-1.5 align-middle">
                         @foreach ($languages as $l)
-                            <a href="{{ Site::url($slug, $l->code) }}" lang="{{ $l->code }}" title="{{ $l->name }}" @class(['uppercase transition hover:text-brand', 'font-bold text-brand' => $l->code === app()->getLocale()])>{{ $l->code }}</a>
+                            <a href="{{ Site::url($slug, $l->code) }}" hreflang="{{ $l->code }}" title="{{ $l->name }}" aria-label="{{ $l->name }}" @if ($l->code === app()->getLocale()) aria-current="true" @endif @class(['inline-flex items-center transition hover:opacity-100', 'opacity-60' => $l->code !== app()->getLocale(), 'ring-2 ring-brand' => $l->code === app()->getLocale()])>
+                                @if ($l->flagUrl())<img src="{{ $l->flagUrl() }}" alt="" width="21" height="16" class="h-4 w-[21px]">@else<span class="uppercase">{{ $l->code }}</span>@endif
+                            </a>
                         @endforeach
                     </span>
                 @endif
@@ -54,7 +60,7 @@
                 <a href="{{ Site::url('') }}" class="absolute top-[5px] left-0 z-[99] lg:top-0"><img src="{{ media($site['logo']) }}" alt="{{ $site['site_name'] }}" class="max-w-full"></a>
                 <nav class="relative z-[9] w-full lg:float-right lg:w-auto">
                     <div class="my-[25px] flow-root lg:hidden">
-                        <button type="button" data-menu-toggle aria-label="Menu" class="float-right block">
+                        <button type="button" data-menu-toggle aria-label="{{ __('site.menu') }}" aria-expanded="false" class="float-right block">
                             <span class="mt-[5px] block h-0.5 w-[26px] rounded-[1px] bg-white"></span>
                             <span class="mt-[5px] block h-0.5 w-[26px] rounded-[1px] bg-white"></span>
                             <span class="mt-[5px] block h-0.5 w-[26px] rounded-[1px] bg-white"></span>
@@ -72,7 +78,7 @@
 </header>
 <div class="h-[135px]"></div>
 
-<main>@yield('content')</main>
+<main id="conteudo" tabindex="-1">@yield('content')</main>
 
 <footer class="bg-footer pt-[50px] lg:pt-20">
     <div class="ctn">
@@ -132,10 +138,22 @@
     </div>
 
     <div class="bg-footer-bottom py-[22px] text-center">
-        <div class="ctn"><p>{{ $copy }}</p></div>
+        <div class="ctn relative">
+            <div class="px-10">
+                <p>{{ $copy }}</p>
+                <p><a href="{{ Site::url('mapa-do-site') }}" class="transition hover:text-white">{{ __('site.sitemap') }}</a></p>
+                <p>{{ __('site.developed_by') }} <a href="{{ config('portal.developer.url') }}" target="_blank" rel="noopener" class="font-semibold text-white transition hover:text-brand">{{ config('portal.developer.name') }}</a> - {{ config('portal.developer.slogan') }}</p>
+            </div>
+            <a href="{{ url('admin') }}" rel="nofollow" title="{{ __('site.admin') }}" aria-label="{{ __('site.admin') }}" class="absolute top-1/2 right-[15px] -translate-y-1/2 text-[18px] text-white transition hover:text-brand"><i class="fa fa-lock"></i></a>
+        </div>
     </div>
 </footer>
 
-<button type="button" data-top aria-label="Topo" class="fixed right-[5px] bottom-2.5 z-[99] hidden size-[25px] rounded-[3px] bg-brand text-center text-[18px] text-white"><i class="fa fa-up"></i></button>
+<button type="button" data-top aria-label="{{ __('site.top') }}" class="fixed right-[5px] bottom-2.5 z-[99] hidden size-[25px] rounded-[3px] bg-brand text-center text-[18px] text-white"><i class="fa fa-up"></i></button>
+@if (app()->getLocale() === 'pt')
+    <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+@endif
 </body>
 </html>

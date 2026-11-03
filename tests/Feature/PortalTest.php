@@ -69,6 +69,46 @@ class PortalTest extends TestCase
         $this->get('https://forestark.test/contato')->assertOk();
     }
 
+    public function test_language_selector_uses_flags_and_accessibility_tools_are_present(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('flags/br.svg')->assertSee('flags/us.svg')->assertSee('flags/es.svg')
+            ->assertSee('data-a11y-font', false)->assertSee('data-a11y-contrast', false)
+            ->assertSee('id="conteudo"', false)->assertSee('Ir para o conteúdo principal')
+            ->assertSee('vlibras-plugin.js');
+        $this->get('/en')->assertSee('Skip to main content')->assertDontSee('vlibras-plugin.js');
+        foreach (['br', 'us', 'es'] as $flag) {
+            $this->assertFileExists(public_path("flags/$flag.svg"));
+        }
+    }
+
+    public function test_sitemap_lists_only_published_pages_in_every_language(): void
+    {
+        Page::where('slug', 'portifolio')->update(['is_published' => false]);
+
+        $this->get('/mapa-do-site')->assertOk()->assertSee('Mapa do site')->assertViewHas('links', fn ($links) => $links->pluck('slug')->contains('a-empresa') && ! $links->pluck('slug')->contains('portifolio'));
+        $this->get('/en/mapa-do-site')->assertOk()->assertSee('Site map')->assertSee('The Company');
+
+        $xml = $this->get('/sitemap.xml')->assertOk()->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
+        $xml->assertSee('/en/a-empresa', false)->assertSee('/es/servicos', false)->assertSee('hreflang="en"', false)->assertDontSee('portifolio', false);
+        $this->assertNotFalse(simplexml_load_string($xml->getContent()));
+    }
+
+    public function test_footer_shows_developer_credit_and_admin_lock(): void
+    {
+        $this->get('/')->assertSee('Desenvolvido por')->assertSee('GAPI Tecnologia &amp; Sistemas', false)
+            ->assertSee('Soluções Inteligentes em Arquitetura Web')->assertSee('fa-lock', false)->assertSee(url('admin'), false);
+        $this->get('/en')->assertSee('Developed by');
+    }
+
+    public function test_new_language_requires_valid_flag(): void
+    {
+        $this->actingAs($this->admin());
+        $this->post('/admin/languages', ['code' => 'fr', 'name' => 'Français', 'flag' => '../x'])->assertSessionHasErrors('flag');
+        $this->post('/admin/languages', ['code' => 'fr', 'name' => 'Français', 'flag' => 'fr'])->assertSessionHasNoErrors();
+        $this->assertSame('fr', Language::where('code', 'fr')->first()->flag);
+    }
+
     public function test_missing_translation_falls_back_to_default_language(): void
     {
         Language::create(['code' => 'fr', 'name' => 'Français', 'position' => 9]);

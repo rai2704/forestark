@@ -51,7 +51,7 @@ class PageController extends Controller
     {
         $isHome = $page?->slug === '';
         $slug = $isHome ? '' : $request->validate([
-            'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn(['admin', 'uploads', 'build', 'contato-enviar', 'inscricao', 'up']), Rule::unique('pages', 'slug')->ignore($page?->id)],
+            'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn(['admin', 'uploads', 'build', 'contato-enviar', 'inscricao', 'up', 'mapa-do-site', 'flags']), Rule::unique('pages', 'slug')->ignore($page?->id)],
         ])['slug'];
 
         return [

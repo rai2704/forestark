@@ -1,4 +1,5 @@
 import Quill from 'quill';
+import './a11y';
 
 const mountEditors = (root = document) => {
     root.querySelectorAll('textarea[data-html]:not([data-ready])').forEach((area) => {

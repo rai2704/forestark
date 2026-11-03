@@ -18,6 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <title>@yield('title', 'Painel') | Admin</title>
+    @include('partials.a11y-head')
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
 </head>
 <body class="min-h-screen bg-slate-100 font-sans text-slate-800 lg:flex">
@@ -35,6 +36,7 @@
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-6 py-3">
             <h1 class="text-lg font-semibold">@yield('title', 'Painel')</h1>
             <div class="flex items-center gap-2 text-sm">
+                @include('partials.a11y-controls')
                 <a href="{{ url('/') }}" target="_blank" class="adm-btn-light">Ver site</a>
                 <a href="{{ route('admin.profile') }}" class="adm-btn-light">{{ $u->name }}</a>
                 <form action="{{ route('admin.logout') }}" method="post">@csrf<button class="adm-btn-light">Sair</button></form>

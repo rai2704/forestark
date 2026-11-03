@@ -1,0 +1,1 @@
+<script>(function(){try{var d=document.documentElement,f=Number(localStorage.getItem('fa_font'))||0;if(f)d.style.zoom=String(1+f*.1);if(localStorage.getItem('fa_contrast')==='1')d.classList.add('alto-contraste');}catch(e){}})();</script>

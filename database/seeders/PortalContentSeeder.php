@@ -24,8 +24,8 @@ class PortalContentSeeder extends Seeder
 
     public function run(): void
     {
-        foreach ([['pt', 'Português', true], ['en', 'English', false], ['es', 'Español', false]] as $i => [$code, $name, $default]) {
-            Language::updateOrCreate(['code' => $code], ['name' => $name, 'is_default' => $default, 'is_active' => true, 'position' => $i]);
+        foreach ([['pt', 'Português', true, 'br'], ['en', 'English', false, 'us'], ['es', 'Español', false, 'es']] as $i => [$code, $name, $default, $flag]) {
+            Language::updateOrCreate(['code' => $code], ['name' => $name, 'flag' => $flag, 'is_default' => $default, 'is_active' => true, 'position' => $i]);
         }
         Site::flush();
 

@@ -1,9 +1,11 @@
 @import 'tailwindcss';
+@import './contrast.css';
 
 @source '../views/layouts/site.blade.php';
 @source '../views/site';
 @source '../views/blocks';
 @source '../views/errors';
+@source '../views/partials';
 
 @theme {
     --breakpoint-sm: 576px;
@@ -47,11 +49,18 @@
     summary::-webkit-details-marker { display: none; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    html.js [data-wow] { opacity: 1; animation: none; }
+}
+
 @layer components {
     .fa, .flaticon { font-style: normal; font-weight: 400; display: inline-block; }
     .fa { font-family: 'font-awesome'; line-height: 1; }
     .flaticon { font-family: Flaticon; }
     .fa-whatsapp::before { content: '\f232'; }
+    .fa-contrast::before { content: '\f042'; }
+    .fa-lock::before { content: '\f023'; }
+    .fa-sitemap::before { content: '\f0e8'; }
     .fa-arrow::before { content: '\f178'; }
     .fa-up::before { content: '\f106'; }
     .fa-left::before { content: '\f104'; }
