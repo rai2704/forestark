@@ -60,6 +60,29 @@ document.querySelectorAll('.alert-auto-dismiss').forEach((el) => {
     setTimeout(() => window.bootstrap?.Alert.getOrCreateInstance(el).close(), 5000);
 });
 
+// Imagem acima de 2 MB não pode ser enviada: avisa ao escolher o arquivo
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+document.addEventListener('change', (e) => {
+    const input = e.target;
+    if (!input.matches?.('input[type=file]')) {
+        return;
+    }
+    const big = [...input.files].filter((f) => f.type.startsWith('image/') && f.size > MAX_IMAGE_BYTES);
+    const message = big.length
+        ? `Limite de 2 MB por imagem. Acima do limite: ${big.map((f) => `${f.name} (${(f.size / 1048576).toFixed(1).replace('.', ',')} MB)`).join(', ')}.`
+        : '';
+    input.setCustomValidity(message);
+
+    let note = input.parentElement.querySelector(':scope > [data-limit-error]');
+    if (!note) {
+        note = document.createElement('div');
+        note.dataset.limitError = '';
+        note.className = 'text-danger fw-semibold small mt-1';
+        input.after(note);
+    }
+    note.textContent = message;
+});
+
 // Compara a imagem escolhida com o tamanho ideal antes de enviar
 document.addEventListener('change', (e) => {
     const input = e.target;

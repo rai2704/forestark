@@ -567,6 +567,39 @@ class PortalTest extends TestCase
         $this->get("/admin/blocks/{$about->id}/edit")->assertSee('Oculto');
     }
 
+    public function test_images_are_limited_to_2_mb_and_documents_are_not(): void
+    {
+        $this->actingAs($this->admin());
+        $big = fn (string $name = 'grande.jpg') => UploadedFile::fake()->image($name, 800, 600)->size(2049);
+        $ok = fn (string $name = 'ok.jpg') => UploadedFile::fake()->image($name, 800, 600)->size(2048);
+
+        $banner = Entry::where('collection', 'banners')->first();
+        $before = $banner->data['image'];
+        $this->put("/admin/conteudo/banners/{$banner->id}", ['data' => ['image' => $before], 'uploads' => ['image' => $big()]])->assertSessionHasErrors('image');
+        $this->assertSame($before, $banner->fresh()->data['image']);
+
+        $this->post('/admin/conteudo/gallery', ['is_published' => 1, 'data' => ['title' => ['pt' => 'Limite']]]);
+        $album = Entry::where('collection', 'gallery')->first();
+        $this->post("/admin/conteudo/gallery/{$album->id}/fotos", ['photos' => [$ok('a.jpg'), $big('b.jpg')]])->assertSessionHasErrors('photos');
+        $this->assertSame([], $album->fresh()->data['photos'] ?? [], 'nenhuma foto do envio é gravada se uma passar do limite');
+
+        $this->put('/admin/configuracoes/identidade', ['data' => ['site_name' => 'Forest Ark Investiments'], 'uploads' => ['logo' => $big()]])->assertSessionHasErrors('logo');
+
+        $this->put("/admin/conteudo/banners/{$banner->id}", ['is_published' => 1, 'data' => ['image' => $before], 'uploads' => ['image' => $ok()]])->assertSessionHasNoErrors();
+        $saved = $banner->fresh()->data['image'];
+        $this->assertNotSame($before, $saved);
+        @unlink(public_path($saved));
+
+        $pdf = UploadedFile::fake()->createWithContent('manual.pdf', "%PDF-1.4\n".str_repeat('0', 3 * 1024 * 1024));
+        $service = Entry::where('collection', 'services')->first();
+        $this->put("/admin/conteudo/services/{$service->id}", ['is_published' => 1, 'data' => ['file' => ''], 'uploads' => ['file' => $pdf]])->assertSessionHasNoErrors();
+        $file = $service->fresh()->data['file'];
+        $this->assertStringEndsWith('.pdf', $file);
+        @unlink(public_path($file));
+
+        $this->get("/admin/conteudo/banners/{$banner->id}/edit")->assertSee('2 MB');
+    }
+
     public function test_settings_group_keeps_other_groups(): void
     {
         $this->actingAs($this->admin());

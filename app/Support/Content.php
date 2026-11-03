@@ -14,7 +14,9 @@ class Content
 
     private const FILE_MIMES = ['application/pdf' => 'pdf'];
 
-    private const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+    public const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+    private const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
     /** Converte {campo: {pt, en}} no valor do idioma atual, com o idioma padrão como reserva. */
     public static function resolve(array $fields, array $data, ?string $locale = null): array
@@ -130,9 +132,17 @@ class Content
 
     public static function assertImage(UploadedFile $file, string $field): void
     {
-        if (! $file->isValid() || ! isset(self::IMAGE_MIMES[$file->getMimeType()]) || $file->getSize() > self::MAX_UPLOAD_BYTES) {
-            throw ValidationException::withMessages([$field => 'Arquivo inválido: "'.$file->getClientOriginalName().'". Envie JPG, PNG, GIF, WEBP ou ICO de até 20 MB.']);
+        if (! $file->isValid() || ! isset(self::IMAGE_MIMES[$file->getMimeType()])) {
+            throw ValidationException::withMessages([$field => 'Arquivo inválido: "'.$file->getClientOriginalName().'". Envie JPG, PNG, GIF, WEBP ou ICO.']);
         }
+        if ($file->getSize() > self::MAX_IMAGE_BYTES) {
+            throw ValidationException::withMessages([$field => self::tooBig($file)]);
+        }
+    }
+
+    private static function tooBig(UploadedFile $file): string
+    {
+        return 'A imagem "'.$file->getClientOriginalName().'" tem '.number_format($file->getSize() / 1048576, 1, ',', '').' MB. O limite é de 2 MB por imagem: reduza o arquivo e envie novamente.';
     }
 
     public static function storeImage(UploadedFile $file, string $field): string
@@ -144,10 +154,17 @@ class Content
     private static function store(UploadedFile $file, string $type, string $field): string
     {
         $allowed = $type === 'image' ? self::IMAGE_MIMES : self::IMAGE_MIMES + self::FILE_MIMES;
-        $extension = $allowed[$file->getMimeType()] ?? null;
+        $mime = $file->getMimeType();
+        $extension = $allowed[$mime] ?? null;
 
-        if (! $file->isValid() || ! $extension || $file->getSize() > self::MAX_UPLOAD_BYTES) {
-            throw ValidationException::withMessages([$field => 'Arquivo inválido: "'.$file->getClientOriginalName().'". Envie JPG, PNG, GIF, WEBP, ICO ou PDF de até 20 MB.']);
+        if (! $file->isValid() || ! $extension) {
+            throw ValidationException::withMessages([$field => 'Arquivo inválido: "'.$file->getClientOriginalName().'". Envie JPG, PNG, GIF, WEBP, ICO ou PDF.']);
+        }
+        if (isset(self::IMAGE_MIMES[$mime]) && $file->getSize() > self::MAX_IMAGE_BYTES) {
+            throw ValidationException::withMessages([$field => self::tooBig($file)]);
+        }
+        if ($file->getSize() > self::MAX_FILE_BYTES) {
+            throw ValidationException::withMessages([$field => 'O arquivo "'.$file->getClientOriginalName().'" passa do limite de 20 MB.']);
         }
 
         $dir = 'uploads/'.date('Y/m');

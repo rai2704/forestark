@@ -11,7 +11,7 @@
                 @csrf
                 <div class="col-lg-8">
                     <input type="file" name="photos[]" multiple required accept="image/jpeg,image/png,image/webp" class="form-control" aria-label="Fotos">
-                    <div class="form-text"><strong><i class="fas fa-ruler-combined me-1"></i>Tamanho ideal: 1600 × 1067 px.</strong> Selecione várias de uma vez. JPG, PNG ou WEBP, até 20 MB cada.</div>
+                    <div class="form-text"><strong><i class="fas fa-ruler-combined me-1"></i>Tamanho ideal: 1600 × 1067 px.</strong> Selecione várias de uma vez. JPG, PNG ou WEBP, até <strong>2 MB</strong> cada, no máximo 20 por envio.</div>
                 </div>
                 <div class="col-auto"><button class="btn-moc btn"><i class="fas fa-upload me-1"></i>Enviar fotos</button></div>
             </form>

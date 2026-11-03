@@ -45,12 +45,15 @@
             @if ($size)
                 <div class="form-text" data-size-hint>
                     <strong><i class="fas fa-ruler-combined me-1"></i>Tamanho ideal: {{ $size[0] }} × {{ $size[1] }} px.</strong>
-                    {{ $f['note'] ?? '' }} JPG, PNG, GIF ou WEBP, até 20 MB.
+                    {{ $f['note'] ?? '' }} JPG, PNG, GIF ou WEBP, até <strong>2 MB</strong>.
                     @if ($currentSize)
                         <span @class(['d-block', 'text-danger' => $currentSize[0] < $size[0] || $currentSize[1] < $size[1]])>Imagem atual: {{ $currentSize[0] }} × {{ $currentSize[1] }} px{{ $currentSize[0] < $size[0] || $currentSize[1] < $size[1] ? ' (menor que o ideal, pode perder nitidez)' : '' }}.</span>
                     @endif
                 </div>
                 <div class="form-text fw-semibold" data-size-check></div>
+            @endif
+            @if ($f['type'] === 'file')
+                <div class="form-text">PDF de até 20 MB ou imagem de até 2 MB.</div>
             @endif
         </div>
     @elseif ($f['type'] === 'toggle')
