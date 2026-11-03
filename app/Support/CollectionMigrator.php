@@ -47,6 +47,7 @@ class CollectionMigrator
         }
 
         self::ensureAboutPage();
+        self::ensureMediaPages();
     }
 
     private static function import(string $collection, array $items): void
@@ -64,6 +65,29 @@ class CollectionMigrator
                 $entry->slug = Entry::uniqueSlug($collection, $entry->slugSource());
             }
             $entry->save();
+        }
+    }
+
+    /** Galeria, Vídeos e Equipe: as páginas já existem, mas só entram nos menus quando houver conteúdo. */
+    public static function ensureMediaPages(): void
+    {
+        $pages = [
+            ['galeria', 'cards', 'gallery', ['pt' => 'Galeria de Fotos', 'en' => 'Photo Gallery', 'es' => 'Galería de Fotos'], ['grid' => true]],
+            ['videos', 'videos', 'videos', ['pt' => 'Vídeos', 'en' => 'Videos', 'es' => 'Videos'], []],
+            ['equipe', 'team', 'team', ['pt' => 'Equipe', 'en' => 'Team', 'es' => 'Equipo'], []],
+        ];
+
+        foreach ($pages as [$slug, $type, $source, $title, $extra]) {
+            if (Page::where('slug', $slug)->exists()) {
+                continue;
+            }
+            $page = Page::create(['slug' => $slug, 'is_published' => true, 'data' => ['title' => $title, 'meta_description' => $title]]);
+            Block::create(['page_id' => $page->id, 'type' => $type, 'position' => 0, 'data' => ['title' => $title, 'source' => $source] + $extra]);
+            MenuItem::create([
+                'location' => 'footer',
+                'position' => (int) MenuItem::where('location', 'footer')->max('position') + 1,
+                'data' => ['label' => $title, 'url' => '/'.$slug],
+            ]);
         }
     }
 

@@ -47,7 +47,7 @@ class SiteController extends Controller
         $entry = Entry::where('collection', $collection)->where('slug', $entrySlug)->published()->first();
         abort_unless($entry?->publicUrl(), 404);
 
-        return view('site.entry', [
+        return view(($entry->schema()['photos'] ?? false) ? 'site.album' : 'site.entry', [
             'entry' => $entry,
             'c' => $entry->content(),
             'route' => $route,
@@ -81,7 +81,7 @@ class SiteController extends Controller
 
     private function publishedPages()
     {
-        return Page::where('is_published', true)->orderBy('slug')->get();
+        return Page::where('is_published', true)->orderBy('slug')->get()->reject(fn (Page $p) => Site::isEmptySection($p->slug))->values();
     }
 
     public function contact(Request $request)

@@ -4,7 +4,13 @@
 @php $me = auth()->user(); @endphp
 <div class="admin-header mb-4">
     <h2><i class="fas fa-th-list me-2"></i>{{ $block->schema()['label'] }}</h2>
-    <a href="{{ route('admin.pages.blocks', $block->page_id) }}" class="btn-moc-outline btn btn-sm"><i class="fas fa-arrow-left me-1"></i>Voltar à página</a>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge {{ $block->is_visible ? 'bg-success' : 'bg-secondary' }}">{{ $block->is_visible ? 'Aparece no site' : 'Oculto no site' }}</span>
+        @if ($me->canAccess('pages', 'editar'))
+            <form method="post" action="{{ route('admin.blocks.toggle', $block) }}" class="d-inline">@csrf<button class="btn btn-sm btn-outline-secondary"><i class="fas {{ $block->is_visible ? 'fa-eye-slash' : 'fa-eye' }} me-1"></i>{{ $block->is_visible ? 'Ocultar no site' : 'Mostrar no site' }}</button></form>
+        @endif
+        <a href="{{ route('admin.pages.blocks', $block->page_id) }}" class="btn-moc-outline btn btn-sm"><i class="fas fa-arrow-left me-1"></i>Voltar à página</a>
+    </div>
 </div>
 
 @if (count($scalars))
@@ -69,7 +75,7 @@
                             @if ($showImage)
                                 <td>@if ($summary['image'])<img src="{{ media($summary['image']) }}" alt="" class="media-thumb">@endif</td>
                             @endif
-                            <td>{{ $summary['title'] ?: '(sem título)' }}</td>
+                            <td>{{ $summary['title'] ?: '(sem título)' }} @if (! empty($row['hidden']))<span class="badge bg-secondary">Oculto</span>@endif</td>
                             <td class="text-end text-nowrap">
                                 @if ($me->canAccess('pages', 'editar'))
                                     @if ($i > 0)

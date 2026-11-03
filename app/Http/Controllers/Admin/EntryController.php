@@ -30,6 +30,10 @@ class EntryController extends Controller
         $entry = new Entry(['collection' => $collection, 'position' => (int) Entry::where('collection', $collection)->max('position') + 1]);
         $this->fill($request, $entry);
 
+        if (Entry::definition($collection)['photos'] ?? false) {
+            return redirect()->route('admin.entries.edit', [$collection, $entry])->with('ok', 'Álbum criado. Agora envie as fotos.');
+        }
+
         return redirect()->route('admin.entries.index', $collection)->with('ok', Entry::definition($collection)['singular'].' incluído(a).');
     }
 
@@ -94,7 +98,11 @@ class EntryController extends Controller
     private function fill(Request $request, Entry $entry): void
     {
         $def = Entry::definition($entry->collection);
+        $photos = $entry->data['photos'] ?? null;
         $entry->data = Content::fromInput($def['fields'], (array) $request->input('data', []), (array) $request->file('uploads', []));
+        if ($def['photos'] ?? false) {
+            $entry->data = $entry->data + ['photos' => $photos ?? []];
+        }
         $entry->is_published = $request->boolean('is_published');
 
         if ($def['dated'] ?? false) {

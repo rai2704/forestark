@@ -82,12 +82,27 @@ class Content
                 $out[$name] = $upload instanceof UploadedFile
                     ? self::store($upload, $f['type'], $name)
                     : self::safeStoredPath((string) $value);
+            } elseif ($f['type'] === 'video') {
+                $out[$name] = self::video((string) $value, $f);
             } else {
                 $out[$name] = self::clean($f['type'], $value);
             }
         }
 
         return $out;
+    }
+
+    private static function video(string $url, array $field): string
+    {
+        $url = trim($url);
+        if ($url === '' && empty($field['required'])) {
+            return '';
+        }
+        if (! VideoUrl::embed($url)) {
+            throw ValidationException::withMessages([$field['name'] => 'Informe um link válido de vídeo do YouTube ou do Vimeo.']);
+        }
+
+        return $url;
     }
 
     private static function clean(string $type, mixed $value): mixed
@@ -111,6 +126,18 @@ class Content
     private static function safeStoredPath(string $path): string
     {
         return str_starts_with($path, 'uploads/') && ! str_contains($path, '..') ? $path : '';
+    }
+
+    public static function assertImage(UploadedFile $file, string $field): void
+    {
+        if (! $file->isValid() || ! isset(self::IMAGE_MIMES[$file->getMimeType()]) || $file->getSize() > self::MAX_UPLOAD_BYTES) {
+            throw ValidationException::withMessages([$field => 'Arquivo inválido: "'.$file->getClientOriginalName().'". Envie JPG, PNG, GIF, WEBP ou ICO de até 20 MB.']);
+        }
+    }
+
+    public static function storeImage(UploadedFile $file, string $field): string
+    {
+        return self::store($file, 'image', $field);
     }
 
     /** Aceita somente tipos permitidos, pelo conteúdo real, e grava com nome aleatório. */

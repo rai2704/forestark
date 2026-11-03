@@ -3,7 +3,7 @@
     use App\Support\Site;
     $site = Site::settings();
     $slug = $slug ?? '';
-    $menu = fn ($location) => MenuItem::where('location', $location)->where('is_visible', true)->orderBy('position')->get()->map->content();
+    $menu = fn ($location) => MenuItem::where('location', $location)->where('is_visible', true)->orderBy('position')->get()->map->content()->reject(fn ($item) => Site::isEmptySection($item['url']));
     $languages = Site::languages();
     $whats = $site['whatsapp'] ? 'https://wa.me/'.preg_replace('/\D/', '', $site['whatsapp']) : null;
     $copy = str_replace([':year', ':name'], [date('Y'), $site['site_name']], (string) $site['footer_copyright']);
@@ -30,7 +30,7 @@
         @endforeach
     }</style>
 </head>
-<body class="overflow-x-hidden pb-[69px]">
+<body class="overflow-x-hidden pb-[69px]" data-lb-close="{{ __('site.lightbox_close') }}" data-lb-prev="{{ __('site.lightbox_prev') }}" data-lb-next="{{ __('site.lightbox_next') }}">
 <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-white focus:p-3 focus:text-black">{{ __('site.skip') }}</a>
 <header class="relative">
     <div class="bg-white py-2.5 text-[13px]">

@@ -40,7 +40,7 @@ class PortalContentSeeder extends Seeder
         $this->extraPages();
 
         Entry::query()->delete();
-        Page::where('slug', 'sobre-nos')->delete();
+        Page::whereIn('slug', ['sobre-nos', 'galeria', 'videos', 'equipe'])->delete();
         CollectionMigrator::run();
     }
 

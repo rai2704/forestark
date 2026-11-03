@@ -31,4 +31,7 @@
         </div>
     </div>
 </form>
+@if (($def['photos'] ?? false) && $entry->exists)
+    @include('admin.entries.photos')
+@endif
 @endsection

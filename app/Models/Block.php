@@ -34,6 +34,12 @@ class Block extends Model
     {
         $out = Content::resolve($this->schema()['fields'], $this->data ?? []);
 
+        foreach ($this->schema()['fields'] as $field) {
+            if ($field['type'] === 'repeater') {
+                $out[$field['name']] = array_values(array_filter($out[$field['name']] ?? [], fn ($item) => empty($item['hidden'])));
+            }
+        }
+
         if ($source = $this->source()) {
             $itemFields = collect($this->schema()['fields'])->firstWhere('name', 'items')['fields'] ?? [];
             $out['items'] = Entry::of($source)->published()->get()->map(fn (Entry $e) => $e->toItem($itemFields))->all();

@@ -59,6 +59,12 @@ Route::prefix('admin')->name('admin.')->group(function () use ($can, $crud) {
             Route::put('{entry}', [Admin\EntryController::class, 'update'])->name('update')->middleware($can('collection', 'editar'));
             Route::post('{entry}/toggle', [Admin\EntryController::class, 'toggle'])->name('toggle')->middleware($can('collection', 'editar'));
             Route::post('{entry}/move', [Admin\EntryController::class, 'move'])->name('move')->middleware($can('collection', 'editar'));
+            Route::middleware($can('collection', 'editar'))->name('photos.')->group(function () {
+                Route::post('{entry}/fotos', [Admin\EntryPhotoController::class, 'store'])->name('store');
+                Route::post('{entry}/fotos/{index}/toggle', [Admin\EntryPhotoController::class, 'toggle'])->whereNumber('index')->name('toggle');
+                Route::post('{entry}/fotos/{index}/move', [Admin\EntryPhotoController::class, 'move'])->whereNumber('index')->name('move');
+                Route::delete('{entry}/fotos/{index}', [Admin\EntryPhotoController::class, 'destroy'])->whereNumber('index')->name('destroy');
+            });
             Route::delete('{entry}', [Admin\EntryController::class, 'destroy'])->name('destroy')->middleware($can('collection', 'excluir'));
         });
 

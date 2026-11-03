@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'photo' => 'foto',
+    'empty' => 'Próximamente.',
+    'lightbox_close' => 'Cerrar',
+    'lightbox_prev' => 'Foto anterior',
+    'lightbox_next' => 'Foto siguiente',
     'newsletter_check' => '¡Casi listo! Le enviamos un correo para confirmar su suscripción.',
     'newsletter_confirm_subject' => 'Confirme su suscripción a :name',
     'newsletter_confirm_body' => 'Recibimos una solicitud para incluir este correo en nuestra lista de novedades. Para confirmar, haga clic en el botón de abajo.',

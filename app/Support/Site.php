@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Entry;
 use App\Models\Language;
 use App\Models\SiteSetting;
 use Illuminate\Support\Collection;
@@ -38,6 +39,19 @@ class Site
     public static function canSendMail(): bool
     {
         return ! in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
+    /** Página de módulo ainda sem nada publicado: some dos menus e do mapa do site até ter conteúdo. */
+    public static function isEmptySection(?string $url): bool
+    {
+        $slug = trim((string) $url, '/');
+        foreach (config('portal.collections') as $key => $def) {
+            if (($def['hide_when_empty'] ?? false) && ($def['page'] ?? null) === $slug) {
+                return ! Entry::where('collection', $key)->where('is_published', true)->exists();
+            }
+        }
+
+        return false;
     }
 
     public static function flush(): void

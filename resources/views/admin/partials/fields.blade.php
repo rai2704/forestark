@@ -60,6 +60,12 @@
         </div>
     @elseif ($f['type'] === 'color')
         <div class="mb-3"><label class="form-label">{{ $f['label'] }}</label><input type="color" name="{{ $name }}" value="{{ $value ?: '#000000' }}" class="form-control form-control-color"></div>
+    @elseif ($f['type'] === 'video')
+        <div class="mb-3">
+            <label class="form-label">{{ $f['label'] }} <span class="text-danger">*</span></label>
+            <input type="url" name="{{ $name }}" value="{{ $value }}" required class="form-control" placeholder="https://www.youtube.com/watch?v=...">
+            <div class="form-text"><i class="fas fa-link me-1"></i>{{ $f['note'] ?? '' }}</div>
+        </div>
     @else
         <div class="mb-3"><label class="form-label">{{ $f['label'] }}</label><input name="{{ $name }}" value="{{ $value }}" class="form-control"></div>
     @endif

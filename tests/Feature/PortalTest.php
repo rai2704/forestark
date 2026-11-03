@@ -16,6 +16,7 @@ use App\Models\SiteSetting;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Support\Site;
+use App\Support\VideoUrl;
 use Database\Seeders\PortalContentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -349,7 +350,7 @@ class PortalTest extends TestCase
 
     public function test_existing_content_moved_to_modules_without_loss(): void
     {
-        foreach (['banners' => 3, 'testimonials' => 2, 'plan' => 4, 'faq' => 5, 'news' => 5, 'partners' => 5, 'success_cases' => 3, 'portfolio' => 4, 'values' => 3, 'certifications' => 11, 'services' => 4, 'subjects' => 4] as $collection => $count) {
+        foreach (['gallery' => 0, 'videos' => 0, 'team' => 0, 'banners' => 3, 'testimonials' => 2, 'plan' => 4, 'faq' => 5, 'news' => 5, 'partners' => 5, 'success_cases' => 3, 'portfolio' => 4, 'values' => 3, 'certifications' => 11, 'services' => 4, 'subjects' => 4] as $collection => $count) {
             $this->assertSame($count, Entry::where('collection', $collection)->count(), $collection);
         }
         $this->get('/')->assertSee('Forest Ark Investiments')->assertSee('COMERCIALIZAÇÃO DA MADEIRA')->assertSee('Um Tesouro da Amazônia')->assertSee('Lemafon');
@@ -371,12 +372,14 @@ class PortalTest extends TestCase
             $this->get("$base/novo")->assertOk();
             $first = config("portal.collections.$collection.fields");
             $name = collect($first)->firstWhere('tr', true)['name'];
-            $this->post($base, ['is_published' => 1, 'data' => [$name => ['pt' => 'Registro E2E']]])->assertRedirect($base);
+            $video = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            $photoAlbum = config("portal.collections.$collection.photos") ?? false;
+            $this->post($base, ['is_published' => 1, 'data' => [$name => ['pt' => 'Registro E2E'], 'video' => $video]])->assertRedirect();
             $entry = Entry::where('collection', $collection)->latest('id')->first();
             $this->assertStringContainsString('Registro E2E', $entry->data[$name]['pt']);
 
             $this->get("$base/{$entry->id}/edit")->assertOk();
-            $this->put("$base/{$entry->id}", ['data' => [$name => ['pt' => 'Alterado']]])->assertRedirect($base);
+            $this->put("$base/{$entry->id}", ['data' => [$name => ['pt' => 'Alterado'], 'video' => $video]])->assertRedirect($base);
             $this->assertFalse($entry->fresh()->is_published);
             $this->post("$base/{$entry->id}/toggle");
             $this->assertTrue($entry->fresh()->is_published);
@@ -462,6 +465,105 @@ class PortalTest extends TestCase
 
         $this->get('/admin/languages')->assertOk()->assertSee("/admin/languages/{$en->id}/edit", false)->assertDontSee('name="name"', false)->assertDontSee('name="flag"', false);
         $this->get("/admin/languages/{$en->id}/edit")->assertOk()->assertSee('name="flag"', false);
+    }
+
+    public function test_video_accepts_only_youtube_or_vimeo_links(): void
+    {
+        foreach ([
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ' => 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+            'https://youtu.be/dQw4w9WgXcQ' => 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+            'https://www.youtube.com/shorts/dQw4w9WgXcQ' => 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+            'https://vimeo.com/123456789' => 'https://player.vimeo.com/video/123456789',
+            'https://vimeo.com/123456789/abcdef1234' => 'https://player.vimeo.com/video/123456789?h=abcdef1234',
+            'https://player.vimeo.com/video/123456789' => 'https://player.vimeo.com/video/123456789',
+        ] as $url => $embed) {
+            $this->assertSame($embed, VideoUrl::embed($url), $url);
+        }
+        foreach (['https://example.com/video.mp4', 'javascript:alert(1)', 'https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ', 'https://vimeo.com/abc', '/uploads/video.mp4', ''] as $bad) {
+            $this->assertNull(VideoUrl::embed($bad), $bad);
+        }
+
+        $this->actingAs($this->admin());
+        $this->post('/admin/conteudo/videos', ['is_published' => 1, 'data' => ['title' => ['pt' => 'X'], 'video' => 'https://example.com/a.mp4']])->assertSessionHasErrors('video');
+        $this->post('/admin/conteudo/videos', ['is_published' => 1, 'data' => ['title' => ['pt' => 'X']]])->assertSessionHasErrors('video');
+        $this->assertSame(0, Entry::where('collection', 'videos')->count());
+    }
+
+    public function test_sections_stay_hidden_until_they_have_published_content(): void
+    {
+        $this->get('/')->assertDontSee('Galeria de Fotos')->assertDontSee('>Equipe<', false);
+        $this->get('/mapa-do-site')->assertDontSee('Galeria de Fotos');
+        $this->get('/sitemap.xml')->assertDontSee('/equipe', false);
+        $this->get('/equipe')->assertOk()->assertSee('Em breve.');
+
+        $person = Entry::create(['collection' => 'team', 'position' => 0, 'is_published' => true, 'data' => ['title' => ['pt' => 'Ana Lima', 'en' => 'Ana Lima'], 'role' => ['pt' => 'Diretora', 'en' => 'Director'], 'text' => [], 'image' => '', 'email' => 'ana@example.com']]);
+        $this->get('/')->assertSee('/equipe', false);
+        $this->get('/equipe')->assertSee('Ana Lima')->assertSee('Diretora');
+        $this->get('/en/equipe')->assertSee('Director');
+        $this->get('/sitemap.xml')->assertSee('/equipe', false);
+
+        $person->update(['is_published' => false]);
+        $this->get('/equipe')->assertDontSee('Ana Lima');
+        $this->get('/mapa-do-site')->assertDontSee('>Equipe<', false);
+
+        $video = Entry::create(['collection' => 'videos', 'position' => 0, 'is_published' => true, 'data' => ['title' => ['pt' => 'Filme'], 'text' => [], 'video' => 'https://youtu.be/dQw4w9WgXcQ']]);
+        $this->get('/videos')->assertSee('youtube-nocookie.com/embed/dQw4w9WgXcQ', false);
+        $video->update(['is_published' => false]);
+        $this->get('/videos')->assertDontSee('youtube-nocookie.com', false);
+    }
+
+    public function test_album_photos_can_be_managed_and_hidden(): void
+    {
+        $this->actingAs($this->admin());
+        $this->post('/admin/conteudo/gallery', ['is_published' => 1, 'data' => ['title' => ['pt' => 'Campo 2026']]])->assertRedirect();
+        $album = Entry::where('collection', 'gallery')->first();
+        $base = "/admin/conteudo/gallery/{$album->id}";
+        $this->assertSame('campo-2026', $album->slug);
+        $this->get('/galeria/campo-2026')->assertNotFound();
+
+        $evil = UploadedFile::fake()->createWithContent('shell.php', '<?php echo 1;');
+        $this->post("$base/fotos", ['photos' => [UploadedFile::fake()->image('ok.jpg', 800, 600), $evil]])->assertSessionHasErrors('photos');
+        $this->assertSame([], $album->fresh()->data['photos'] ?? []);
+
+        $this->post("$base/fotos", ['photos' => [UploadedFile::fake()->image('a.jpg', 800, 600), UploadedFile::fake()->image('b.jpg', 800, 600)]])->assertSessionHasNoErrors();
+        $album->refresh();
+        $paths = array_column($album->data['photos'], 'image');
+        $this->assertCount(2, $paths);
+
+        $this->get('/galeria/campo-2026')->assertOk()->assertSee($paths[0], false)->assertSee($paths[1], false)->assertSee('data-lightbox', false);
+        $this->get('/galeria')->assertOk()->assertSee('/galeria/campo-2026', false);
+
+        $this->post("$base/fotos/0/toggle");
+        $this->get('/galeria/campo-2026')->assertDontSee($paths[0], false)->assertSee($paths[1], false);
+        $this->post("$base/fotos/1/move", ['direction' => 'up']);
+        $this->assertSame($paths[1], $album->fresh()->data['photos'][0]['image']);
+
+        $this->put($base, ['is_published' => 1, 'data' => ['title' => ['pt' => 'Campo 2026']]]);
+        $this->assertCount(2, $album->fresh()->data['photos'], 'salvar o álbum mantém as fotos');
+
+        $this->post("$base/toggle");
+        $this->get('/galeria/campo-2026')->assertNotFound();
+        $this->post("$base/toggle");
+
+        $this->delete("$base/fotos/1");
+        $this->delete("$base/fotos/0");
+        $this->assertSame([], $album->fresh()->data['photos']);
+        $this->get('/galeria/campo-2026')->assertNotFound();
+        foreach ($paths as $path) {
+            @unlink(public_path($path));
+        }
+    }
+
+    public function test_block_item_can_be_hidden_from_site(): void
+    {
+        $this->actingAs($this->admin());
+        $about = Block::where('type', 'about_accordion')->first();
+        $url = "/admin/blocks/{$about->id}/itens/documents";
+        $this->post($url, ['data' => ['label' => ['pt' => 'Laudo Tecnico'], 'url' => 'https://example.com/a.pdf']]);
+        $this->get('/')->assertSee('Laudo Tecnico');
+        $this->put("$url/0", ['data' => ['label' => ['pt' => 'Laudo Tecnico'], 'url' => 'https://example.com/a.pdf', 'hidden' => 1]]);
+        $this->get('/')->assertDontSee('Laudo Tecnico');
+        $this->get("/admin/blocks/{$about->id}/edit")->assertSee('Oculto');
     }
 
     public function test_settings_group_keeps_other_groups(): void

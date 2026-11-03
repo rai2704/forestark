@@ -51,6 +51,16 @@ $collections = [
         $t('text', 'Resumo', 'textarea'),
         $body,
     ]],
+    'gallery' => ['label' => 'Galeria de Fotos', 'singular' => 'Álbum', 'icon' => 'fa-camera-retro', 'group' => 'Conteúdo', 'detail' => 'galeria', 'photos' => true, 'page' => 'galeria', 'hide_when_empty' => true, 'fields' => [
+        $t('title', 'Nome do álbum'),
+        $t('text', 'Descrição', 'textarea'),
+        $img('image', 'Capa (opcional: sem capa, usa a primeira foto)', 1000, 667, 'Use a mesma proporção em todas as capas.'),
+    ]],
+    'videos' => ['label' => 'Vídeos', 'singular' => 'Vídeo', 'icon' => 'fa-circle-play', 'group' => 'Conteúdo', 'page' => 'videos', 'hide_when_empty' => true, 'fields' => [
+        $t('title', 'Título'),
+        ['name' => 'video', 'label' => 'Link do vídeo no YouTube ou Vimeo', 'type' => 'video', 'tr' => false, 'required' => true, 'note' => 'Cole o endereço do vídeo, por exemplo https://www.youtube.com/watch?v=... ou https://vimeo.com/123456789. O vídeo fica hospedado lá, nunca neste servidor.'],
+        $t('text', 'Descrição', 'textarea'),
+    ]],
     'partners' => ['label' => 'Parceiros', 'singular' => 'Parceiro', 'icon' => 'fa-handshake', 'group' => 'Conteúdo', 'fields' => [
         $img('image', 'Logo', 1000, 667, 'Use a mesma proporção em todos para ficarem alinhados.'),
         $t('badge', 'Nome (etiqueta sobre a imagem)'),
@@ -73,6 +83,13 @@ $collections = [
         $t('text', 'Texto', 'textarea'),
         $t('button', 'Texto do link'),
         $s('link', 'Link', 'url'),
+    ]],
+    'team' => ['label' => 'Equipe', 'singular' => 'Integrante', 'icon' => 'fa-people-group', 'group' => 'A Empresa', 'page' => 'equipe', 'hide_when_empty' => true, 'fields' => [
+        $img('image', 'Foto', 600, 600, 'Quadrada, com o rosto no centro.'),
+        $t('title', 'Nome'),
+        $t('role', 'Cargo'),
+        $t('text', 'Apresentação', 'textarea'),
+        $s('email', 'E-mail (opcional)'),
     ]],
     'certifications' => ['label' => 'Certificações', 'singular' => 'Certificação', 'icon' => 'fa-certificate', 'group' => 'A Empresa', 'fields' => [
         $img('image', 'Imagem', 1000, 667, 'Certificados verticais também são aceitos; ficam mais altos na listagem do site.'),
@@ -251,6 +268,24 @@ $config = [
             $t('button', 'Texto do botão'),
             $items('Assuntos', [$t('label', 'Assunto')]),
         ]],
+        'videos' => ['label' => 'Vídeos', 'fields' => [
+            $t('title', 'Título'),
+            $items('Vídeos', [
+                $t('title', 'Título'),
+                ['name' => 'video', 'label' => 'Link do vídeo no YouTube ou Vimeo', 'type' => 'video', 'tr' => false, 'required' => true, 'note' => 'O vídeo fica hospedado lá, nunca neste servidor.'],
+                $t('text', 'Descrição', 'textarea'),
+            ]),
+        ]],
+        'team' => ['label' => 'Equipe', 'fields' => [
+            $t('title', 'Título'),
+            $items('Integrantes', [
+                $img('image', 'Foto', 600, 600, 'Quadrada, com o rosto no centro.'),
+                $t('title', 'Nome'),
+                $t('role', 'Cargo'),
+                $t('text', 'Apresentação', 'textarea'),
+                $s('email', 'E-mail (opcional)'),
+            ]),
+        ]],
         'rich_text' => ['label' => 'Texto livre', 'fields' => [
             $t('title', 'Título'),
             $img('image', 'Imagem (opcional)', 1200, 800, 'Aparece acima do texto.'),
@@ -275,12 +310,23 @@ foreach ([
     'testimonials' => ['testimonials'],
     'about_accordion' => ['plan', 'faq'],
     'faq' => ['faq', 'plan'],
-    'cards' => ['news', 'success_cases', 'portfolio', 'partners', 'certifications'],
+    'cards' => ['news', 'success_cases', 'portfolio', 'partners', 'certifications', 'gallery'],
+    'videos' => ['videos'],
+    'team' => ['team'],
     'features' => ['values'],
     'downloads' => ['services'],
     'contact_form' => ['subjects'],
 ] as $type => $sources) {
     $config['blocks'][$type]['sources'] = $sources;
+}
+
+// Todo item próprio de bloco também pode aparecer ou não no site.
+foreach ($config['blocks'] as $type => $block) {
+    foreach ($block['fields'] as $i => $field) {
+        if ($field['type'] === 'repeater') {
+            $config['blocks'][$type]['fields'][$i]['fields'][] = $s('hidden', 'Ocultar no site', 'toggle');
+        }
+    }
 }
 
 return $config;

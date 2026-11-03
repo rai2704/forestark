@@ -48,14 +48,28 @@ class Entry extends Model
     {
         $fields = collect($this->schema()['fields'])->concat($blockFields)->unique('name')->values()->all();
 
-        return Content::resolve($fields, $this->data ?? []) + ['url' => $this->publicUrl()];
+        $item = Content::resolve($fields, $this->data ?? []) + ['url' => $this->publicUrl()];
+
+        if ($this->schema()['photos'] ?? false) {
+            $item['image'] = ($item['image'] ?? null) ?: ($this->visiblePhotos()[0]['image'] ?? null);
+        }
+
+        return $item;
+    }
+
+    public function visiblePhotos(): array
+    {
+        return array_values(array_filter((array) ($this->data['photos'] ?? []), fn ($p) => empty($p['hidden'])));
     }
 
     /** Só há página de detalhe quando o módulo prevê e o conteúdo completo foi preenchido. */
     public function publicUrl(): ?string
     {
         $route = $this->schema()['detail'] ?? null;
-        if (! $route || ! $this->slug || trim(strip_tags((string) ($this->content()['body'] ?? ''))) === '') {
+        $hasContent = ($this->schema()['photos'] ?? false)
+            ? count($this->visiblePhotos()) > 0
+            : trim(strip_tags((string) ($this->content()['body'] ?? ''))) !== '';
+        if (! $route || ! $this->slug || ! $hasContent) {
             return null;
         }
 
