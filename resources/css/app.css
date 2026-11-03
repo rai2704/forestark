@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+@source '../views/layouts/site.blade.php';
+@source '../views/site';
+@source '../views/blocks';
+@source '../views/errors';
+
+@theme {
+    --breakpoint-sm: 576px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 992px;
+    --breakpoint-xl: 1200px;
+    --font-sans: 'Open Sans', sans-serif;
+    --font-serif: 'Tinos', serif;
+    --color-brand: #379c3e;
+    --color-header: #163e19;
+    --color-footer: #1c4e1f;
+    --color-footer-bottom: #163e19;
+    --color-soft: #f6f6f6;
+    --animate-fade-up: fade-up 1s both;
+    --animate-menu-sticky: menu-sticky .7s ease-in-out;
+    @keyframes fade-up { from { opacity: 0; transform: translate3d(0, 100%, 0); } to { opacity: 1; transform: none; } }
+    @keyframes menu-sticky { from { opacity: 0; transform: translate3d(0, -100%, 0); } to { opacity: 1; transform: none; } }
+}
+
+@font-face { font-family: Flaticon; src: url('../fonts/Flaticon.woff') format('woff'); font-display: swap; }
+@font-face { font-family: 'font-awesome'; src: url('../fonts/fontawesome-webfont.woff2') format('woff2'); font-display: swap; }
+
+@layer base {
+    body { font-family: var(--font-sans); font-size: 15px; line-height: 1.5; color: #777; }
+    h1, h2, h3, h4, h5, h6 { font-family: var(--font-serif); color: #181818; line-height: 1.2; }
+    h1 { font-size: 70px; font-weight: 700; line-height: 75px; }
+    h2 { font-size: 35px; font-weight: 400; line-height: 40px; }
+    h3 { font-size: 30px; font-weight: 700; }
+    h4 { font-size: 24px; font-weight: 700; }
+    h5 { font-size: 25px; font-weight: 400; }
+    h6 { font-size: 20px; font-weight: 400; }
+    p { line-height: 25px; }
+    a { display: inline-block; }
+    button { cursor: pointer; }
+    html.js [data-wow] { opacity: 0; }
+    html.js [data-wow].is-in { opacity: 1; animation: var(--animate-fade-up); }
+    details::details-content { transition: height .35s, content-visibility .35s allow-discrete; height: 0; overflow: clip; interpolate-size: allow-keywords; }
+    details[open]::details-content { height: auto; }
+    input::placeholder, textarea::placeholder { color: #757575; opacity: 1; }
+    summary { list-style: none; cursor: pointer; }
+    summary::-webkit-details-marker { display: none; }
+}
+
+@layer components {
+    .fa, .flaticon { font-style: normal; font-weight: 400; display: inline-block; }
+    .fa { font-family: 'font-awesome'; line-height: 1; }
+    .flaticon { font-family: Flaticon; }
+    .fa-whatsapp::before { content: '\f232'; }
+    .fa-arrow::before { content: '\f178'; }
+    .fa-up::before { content: '\f106'; }
+    .fa-left::before { content: '\f104'; }
+    .fa-right::before { content: '\f105'; }
+    .flaticon-chat::before { content: '\f114'; }
+    .flaticon-phone::before { content: '\f113'; }
+    .flaticon-mail::before { content: '\f111'; }
+    .accordion-body p { border-left: 1px solid #e3e3e3; padding-left: 20px; }
+}
+
+@utility ctn {
+    width: 100%; margin-inline: auto; padding-inline: 15px;
+    @media (min-width: 576px) { max-width: 540px; }
+    @media (min-width: 768px) { max-width: 720px; }
+    @media (min-width: 992px) { max-width: 960px; }
+    @media (min-width: 1200px) { max-width: 1200px; }
+}
+
+@utility section-gap {
+    margin-bottom: 90px;
+    @media (min-width: 992px) { margin-bottom: 135px; }
+}
+
+@utility carousel-item {
+    flex: none;
+    width: calc((100% - (var(--n) - 1) * var(--g)) / var(--n));
+}
+
+@utility btn-theme {
+    display: inline-block; width: 180px; line-height: 52px; font-size: 14px; font-weight: 700; text-align: center;
+    text-transform: uppercase; color: #fff; background: var(--color-brand); transition: all .3s ease-in-out;
+    &:hover { background: #151515; }
+}
+
+@utility title-bar {
+    position: relative; padding-bottom: 24px;
+    &::before { content: ''; position: absolute; bottom: 0; left: 0; width: 62px; height: 3px; background: var(--color-brand); }
+    &.text-center::before { left: 50%; margin-left: -31px; }
+}
+
+@utility field-theme {
+    font-family: var(--font-serif); width: 100%; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 10px; margin-bottom: 30px; outline: none;
+}

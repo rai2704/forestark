@@ -1,0 +1,125 @@
+document.documentElement.classList.add('js');
+
+// Revela elementos com animação ao entrarem na tela
+const wow = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+        if (e.isIntersecting) {
+            e.target.classList.add('is-in');
+            wow.unobserve(e.target);
+        }
+    });
+});
+document.querySelectorAll('[data-wow]').forEach((el) => wow.observe(el));
+
+// Menu fixo e botão de voltar ao topo
+const menu = document.querySelector('[data-menu]');
+const toTop = document.querySelector('[data-top]');
+const onScroll = () => {
+    const y = window.scrollY;
+    if (menu) {
+        menu.toggleAttribute('data-fixed', y >= 190);
+    }
+    toTop?.classList.toggle('hidden', y <= 200);
+};
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+toTop?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+document.querySelector('[data-menu-toggle]')?.addEventListener('click', () => {
+    document.querySelector('[data-menu-list]')?.classList.toggle('max-lg:hidden');
+});
+
+// Carrossel: rotaciona os itens em loop, como o Owl Carousel do tema
+document.querySelectorAll('[data-carousel]').forEach((root) => {
+    const track = root.querySelector('[data-track]');
+    if (!track || !track.children.length) {
+        return;
+    }
+    const visible = () => parseInt(getComputedStyle(root).getPropertyValue('--n'), 10) || 1;
+    if (track.children.length <= visible()) {
+        [...track.children].forEach((c) => track.appendChild(c.cloneNode(true)));
+    }
+    const gap = () => parseFloat(getComputedStyle(root).getPropertyValue('--g')) || 0;
+    let busy = false;
+
+    const slide = (dir) => {
+        if (busy) {
+            return;
+        }
+        busy = true;
+        const step = track.children[0].getBoundingClientRect().width + gap();
+        const finish = () => {
+            track.style.transition = 'none';
+            track.style.transform = '';
+            if (dir > 0) {
+                track.appendChild(track.children[0]);
+            }
+            busy = false;
+        };
+        if (dir < 0) {
+            track.style.transition = 'none';
+            track.prepend(track.lastElementChild);
+            track.style.transform = `translateX(${-step}px)`;
+            track.getBoundingClientRect();
+        }
+        track.style.transition = 'transform .25s ease';
+        track.style.transform = dir > 0 ? `translateX(${-step}px)` : 'translateX(0)';
+        track.addEventListener('transitionend', finish, { once: true });
+    };
+
+    root.querySelector('[data-next]')?.addEventListener('click', () => slide(1));
+    root.querySelector('[data-prev]')?.addEventListener('click', () => slide(-1));
+    let paused = false;
+    root.addEventListener('mouseenter', () => { paused = true; });
+    root.addEventListener('mouseleave', () => { paused = false; });
+    setInterval(() => { if (!paused && !document.hidden) slide(1); }, 4000);
+});
+
+// Banner: transição em mosaico, como o Camera Slider do tema
+document.querySelectorAll('[data-hero]').forEach((hero) => {
+    const slides = [...hero.querySelectorAll('[data-slide]')];
+    if (slides.length < 2) {
+        return;
+    }
+    let current = 0;
+    let busy = false;
+    const COLS = 8;
+    const ROWS = 6;
+
+    const show = (next) => {
+        if (busy || next === current) {
+            return;
+        }
+        busy = true;
+        const target = slides[next];
+        const image = target.dataset.image;
+        const grid = document.createElement('div');
+        grid.className = 'absolute inset-0 z-10 grid';
+        grid.style.gridTemplate = `repeat(${ROWS}, 1fr) / repeat(${COLS}, 1fr)`;
+
+        const cells = [];
+        const { width, height } = hero.getBoundingClientRect();
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const cell = document.createElement('div');
+                cell.style.cssText = `background:linear-gradient(rgba(30,30,30,.5),rgba(30,30,30,.5)),url("${image}");background-size:${width}px ${height}px;background-position:${-c * width / COLS}px ${-r * height / ROWS}px;opacity:0;transition:opacity .6s ease`;
+                grid.appendChild(cell);
+                cells.push(cell);
+            }
+        }
+        hero.appendChild(grid);
+        cells.forEach((cell) => setTimeout(() => { cell.style.opacity = '1'; }, Math.random() * 1000));
+
+        setTimeout(() => {
+            slides[current].classList.add('invisible');
+            target.classList.remove('invisible');
+            grid.remove();
+            current = next;
+            busy = false;
+        }, 1650);
+    };
+
+    hero.querySelector('[data-next]')?.addEventListener('click', () => show((current + 1) % slides.length));
+    hero.querySelector('[data-prev]')?.addEventListener('click', () => show((current - 1 + slides.length) % slides.length));
+    setInterval(() => { if (!document.hidden) show((current + 1) % slides.length); }, 5650);
+});
