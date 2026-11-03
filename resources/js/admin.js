@@ -60,16 +60,17 @@ document.querySelectorAll('.alert-auto-dismiss').forEach((el) => {
     setTimeout(() => window.bootstrap?.Alert.getOrCreateInstance(el).close(), 5000);
 });
 
-// Imagem acima de 2 MB não pode ser enviada: avisa ao escolher o arquivo
+// Imagem acima de 2 MB ou documento acima de 5 MB não podem ser enviados: avisa ao escolher o arquivo
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 document.addEventListener('change', (e) => {
     const input = e.target;
     if (!input.matches?.('input[type=file]')) {
         return;
     }
-    const big = [...input.files].filter((f) => f.type.startsWith('image/') && f.size > MAX_IMAGE_BYTES);
+    const big = [...input.files].filter((f) => f.size > (f.type.startsWith('image/') ? MAX_IMAGE_BYTES : MAX_FILE_BYTES));
     const message = big.length
-        ? `Limite de 2 MB por imagem. Acima do limite: ${big.map((f) => `${f.name} (${(f.size / 1048576).toFixed(1).replace('.', ',')} MB)`).join(', ')}.`
+        ? `Limite de 2 MB por imagem e 5 MB por documento. Acima do limite: ${big.map((f) => `${f.name} (${(f.size / 1048576).toFixed(1).replace('.', ',')} MB)`).join(', ')}.`
         : '';
     input.setCustomValidity(message);
 

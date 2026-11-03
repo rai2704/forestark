@@ -16,7 +16,7 @@ class Content
 
     public const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
-    private const MAX_FILE_BYTES = 20 * 1024 * 1024;
+    public const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
     /** Converte {campo: {pt, en}} no valor do idioma atual, com o idioma padrão como reserva. */
     public static function resolve(array $fields, array $data, ?string $locale = null): array
@@ -164,7 +164,7 @@ class Content
             throw ValidationException::withMessages([$field => self::tooBig($file)]);
         }
         if ($file->getSize() > self::MAX_FILE_BYTES) {
-            throw ValidationException::withMessages([$field => 'O arquivo "'.$file->getClientOriginalName().'" passa do limite de 20 MB.']);
+            throw ValidationException::withMessages([$field => 'O documento "'.$file->getClientOriginalName().'" tem '.number_format($file->getSize() / 1048576, 1, ',', '').' MB. O limite é de 5 MB por documento: reduza o arquivo e envie novamente.']);
         }
 
         $dir = 'uploads/'.date('Y/m');

@@ -567,7 +567,7 @@ class PortalTest extends TestCase
         $this->get("/admin/blocks/{$about->id}/edit")->assertSee('Oculto');
     }
 
-    public function test_images_are_limited_to_2_mb_and_documents_are_not(): void
+    public function test_images_are_limited_to_2_mb_and_documents_to_5_mb(): void
     {
         $this->actingAs($this->admin());
         $big = fn (string $name = 'grande.jpg') => UploadedFile::fake()->image($name, 800, 600)->size(2049);
@@ -596,6 +596,10 @@ class PortalTest extends TestCase
         $file = $service->fresh()->data['file'];
         $this->assertStringEndsWith('.pdf', $file);
         @unlink(public_path($file));
+
+        $tooBig = UploadedFile::fake()->createWithContent('grande.pdf', '%PDF-1.4
+'.str_repeat('0', 5 * 1024 * 1024 + 1));
+        $this->put("/admin/conteudo/services/{$service->id}", ['is_published' => 1, 'data' => ['file' => $file], 'uploads' => ['file' => $tooBig]])->assertSessionHasErrors('file');
 
         $this->get("/admin/conteudo/banners/{$banner->id}/edit")->assertSee('2 MB');
     }

@@ -53,7 +53,7 @@
                 <div class="form-text fw-semibold" data-size-check></div>
             @endif
             @if ($f['type'] === 'file')
-                <div class="form-text">PDF de até 20 MB ou imagem de até 2 MB.</div>
+                <div class="form-text">Documento de até <strong>5 MB</strong> ou imagem de até <strong>2 MB</strong>.</div>
             @endif
         </div>
     @elseif ($f['type'] === 'toggle')
