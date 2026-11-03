@@ -7,3 +7,76 @@
 .media-preview { max-height: 110px; border: 1px solid #dee2e6; border-radius: .25rem; background: #f8f9fa; }
 .media-thumb { max-height: 60px; max-width: 110px; border: 1px solid #dee2e6; border-radius: .25rem; background: #f8f9fa; }
 .flag-sm { width: 21px; height: 16px; border: 1px solid #dee2e6; }
+
+/* ---- Botões: cor sólida, cada cor com um significado ---- */
+.admin-body, .login-card {
+    --btn-save: #1f7a2e;
+    --btn-save-dk: #17611f;
+    --btn-back: #2b6cb0;
+    --btn-back-dk: #215387;
+    --btn-neutral: #566573;
+    --btn-neutral-dk: #424e59;
+    --btn-danger: #c9302c;
+    --btn-danger-dk: #a02622;
+}
+
+.btn-moc, .btn-moc-outline, .btn-light, .btn-outline-secondary, .btn-outline-danger, .btn-outline-success, .btn-action {
+    border: 0 !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .22);
+    transition: background-color .15s, transform .15s, box-shadow .15s;
+}
+.btn-moc:hover, .btn-moc-outline:hover, .btn-light:hover, .btn-outline-secondary:hover, .btn-outline-danger:hover, .btn-outline-success:hover, .btn-action:hover {
+    color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .28);
+}
+.btn-moc:active, .btn-moc-outline:active, .btn-light:active, .btn-outline-secondary:active, .btn-outline-danger:active, .btn-outline-success:active, .btn-action:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+
+/* Salvar, Novo, Adicionar */
+.btn-moc, .btn-light { background-color: var(--btn-save) !important; }
+.btn-moc:hover, .btn-light:hover { background-color: var(--btn-save-dk) !important; }
+
+/* Voltar */
+.btn-moc-outline { background-color: var(--btn-back) !important; }
+.btn-moc-outline:hover { background-color: var(--btn-back-dk) !important; }
+
+/* Cancelar e ajustes neutros */
+.btn-outline-secondary { background-color: var(--btn-neutral) !important; }
+.btn-outline-secondary:hover { background-color: var(--btn-neutral-dk) !important; }
+
+/* Excluir, Remover */
+.btn-outline-danger { background-color: var(--btn-danger) !important; }
+.btn-outline-danger:hover { background-color: var(--btn-danger-dk) !important; }
+
+/* Abas de idioma: a ativa fica em verde, as demais em cinza-azulado */
+.btn-outline-success { background-color: var(--btn-neutral) !important; }
+.btn-outline-success:hover { background-color: var(--btn-neutral-dk) !important; }
+.btn-outline-success.active { background-color: var(--btn-save) !important; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--btn-save); }
+
+/* Ações das listagens */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: .4rem;
+    font-size: .85rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn-action-view { background-color: var(--btn-back) !important; }
+.btn-action-view:hover { background-color: var(--btn-back-dk) !important; }
+.btn-action-edit { background-color: var(--btn-save) !important; }
+.btn-action-edit:hover { background-color: var(--btn-save-dk) !important; }
+.btn-action-del { background-color: var(--btn-danger) !important; }
+.btn-action-del:hover { background-color: var(--btn-danger-dk) !important; }
+
+/* Botões da barra superior */
+.admin-navbar .nav-icon-btn { background-color: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .45); color: #fff; }
+.admin-navbar .nav-icon-btn:hover { background-color: rgba(255, 255, 255, .32); color: #fff; }
