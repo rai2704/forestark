@@ -14,6 +14,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         $role = Role::firstOrCreate(['name' => 'Administrador'], ['full_access' => true, 'permissions' => []]);
+        Role::firstOrCreate(['name' => 'Dev'], ['full_access' => true, 'permissions' => []]);
         $email = env('ADMIN_EMAIL', 'admin@forestark.com.br');
 
         if (User::where('email', $email)->exists()) {

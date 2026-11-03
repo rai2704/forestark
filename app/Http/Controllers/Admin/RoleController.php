@@ -9,6 +9,11 @@ use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
+    public function index()
+    {
+        return view('admin.users.roles', ['roles' => Role::withCount('users')->orderBy('name')->get()]);
+    }
+
     public function create()
     {
         return view('admin.users.role', ['role' => new Role(['permissions' => []])]);
@@ -18,7 +23,7 @@ class RoleController extends Controller
     {
         Role::create($this->validated($request));
 
-        return redirect()->route('admin.users.index')->with('ok', 'Perfil criado.');
+        return redirect()->route('admin.roles.index')->with('ok', 'Perfil criado.');
     }
 
     public function edit(Role $role)
@@ -31,7 +36,7 @@ class RoleController extends Controller
         abort_if($role->full_access, 422, 'O perfil de acesso total não pode ser alterado.');
         $role->update($this->validated($request, $role));
 
-        return redirect()->route('admin.users.index')->with('ok', 'Perfil salvo.');
+        return redirect()->route('admin.roles.index')->with('ok', 'Perfil salvo.');
     }
 
     public function destroy(Role $role)

@@ -4,7 +4,7 @@ import './a11y';
 const mountEditors = (root = document) => {
     root.querySelectorAll('textarea[data-html]:not([data-ready])').forEach((area) => {
         area.dataset.ready = '1';
-        area.classList.add('hidden');
+        area.classList.add('d-none');
         const holder = document.createElement('div');
         area.after(holder);
         const quill = new Quill(holder, {
@@ -21,12 +21,10 @@ let activeLang = document.querySelector('[data-lang-tab]')?.dataset.langTab;
 
 const applyLang = (root = document) => {
     root.querySelectorAll('[data-lang-field]').forEach((el) => {
-        el.classList.toggle('hidden', el.dataset.langField !== activeLang);
+        el.classList.toggle('d-none', el.dataset.langField !== activeLang);
     });
     document.querySelectorAll('[data-lang-tab]').forEach((tab) => {
-        const on = tab.dataset.langTab === activeLang;
-        tab.classList.toggle('bg-emerald-700', on);
-        tab.classList.toggle('text-white', on);
+        tab.classList.toggle('active', tab.dataset.langTab === activeLang);
     });
 };
 
@@ -68,6 +66,10 @@ document.addEventListener('click', (e) => {
         box.querySelector('[data-preview]')?.remove();
         clear.remove();
     }
+
+    if (e.target.closest('#sidebarToggle')) {
+        document.getElementById('adminSidebar')?.classList.toggle('show');
+    }
 });
 
 document.addEventListener('submit', (e) => {
@@ -75,6 +77,10 @@ document.addEventListener('submit', (e) => {
     if (message && !confirm(message)) {
         e.preventDefault();
     }
+});
+
+document.querySelectorAll('.alert-auto-dismiss').forEach((el) => {
+    setTimeout(() => window.bootstrap?.Alert.getOrCreateInstance(el).close(), 5000);
 });
 
 applyLang();

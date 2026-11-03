@@ -12,6 +12,9 @@ use App\Support\Site;
 use Database\Seeders\PortalContentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class PortalTest extends TestCase
@@ -101,6 +104,65 @@ class PortalTest extends TestCase
         $this->get('/en')->assertSee('Developed by');
     }
 
+    public function test_admin_lock_opens_in_new_tab_and_login_page_renders(): void
+    {
+        $this->get('/')->assertSee('target="_blank" rel="nofollow noopener"', false);
+        $this->get('/admin/login')->assertOk()->assertSee('Área Restrita')->assertSee('Esqueceu sua senha?');
+        $this->get('/admin/recuperar-senha')->assertOk();
+        $this->get('/admin/redefinir-senha/abc?email=a@example.com')->assertOk()->assertSee('a@example.com');
+    }
+
+    public function test_password_recovery_does_not_reveal_accounts_and_resets_password(): void
+    {
+        $user = $this->admin();
+        $generic = 'Se esse e-mail estiver cadastrado e ativo, enviamos um link de redefinição para ele.';
+
+        $this->post('/admin/recuperar-senha', ['email' => 'ninguem@example.com'])->assertSessionHas('ok', $generic);
+        $this->post('/admin/recuperar-senha', ['email' => $user->email])->assertSessionHas('ok', $generic);
+        $this->assertDatabaseHas('password_reset_tokens', ['email' => $user->email]);
+
+        $this->post('/admin/redefinir-senha', ['token' => 'errado', 'email' => $user->email, 'password' => 'senha-nova-123', 'password_confirmation' => 'senha-nova-123'])->assertSessionHasErrors('email');
+
+        $token = Password::createToken($user);
+        $this->post('/admin/redefinir-senha', ['token' => $token, 'email' => $user->email, 'password' => 'senha-nova-123', 'password_confirmation' => 'senha-nova-123'])->assertRedirect('/admin/login');
+        $this->assertTrue(Hash::check('senha-nova-123', $user->fresh()->password));
+    }
+
+    public function test_contact_requires_captcha(): void
+    {
+        $payload = ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi'];
+
+        $this->get('/contato')->assertOk()->assertSee('Quanto é')->assertSee('name="captcha"', false)->assertSee('Informações de Contato');
+        $this->post('/contato-enviar', $payload)->assertSessionHasErrors('captcha');
+        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => '8'])->assertSessionHasErrors('captcha');
+        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => 'x'])->assertSessionHasErrors('captcha');
+        $this->assertSame(0, ContactMessage::count());
+
+        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => '7'])->assertSessionHasNoErrors();
+        $this->assertSame(1, ContactMessage::count());
+        $this->post('/contato-enviar', $payload + ['captcha' => '7'])->assertSessionHasErrors('captcha');
+    }
+
+    public function test_contact_uses_turnstile_when_configured(): void
+    {
+        config(['services.turnstile.site_key' => 'site', 'services.turnstile.secret_key' => 'secret']);
+        $payload = ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi'];
+
+        $this->get('/contato')->assertSee('cf-turnstile', false)->assertDontSee('name="captcha"', false);
+        $this->post('/contato-enviar', $payload)->assertSessionHasErrors('captcha');
+
+        Http::fake(['challenges.cloudflare.com/*' => Http::sequence()->push(['success' => false])->push(['success' => true])]);
+        $this->post('/contato-enviar', $payload + ['cf-turnstile-response' => 'ruim'])->assertSessionHasErrors('captcha');
+
+        $this->post('/contato-enviar', $payload + ['cf-turnstile-response' => 'bom'])->assertSessionHasNoErrors();
+        $this->assertSame(1, ContactMessage::count());
+    }
+
+    public function test_footer_bar_is_fixed(): void
+    {
+        $this->get('/')->assertSee('data-footer-bar class="fixed inset-x-0 bottom-0', false);
+    }
+
     public function test_new_language_requires_valid_flag(): void
     {
         $this->actingAs($this->admin());
@@ -126,7 +188,7 @@ class PortalTest extends TestCase
 
     public function test_contact_form_stores_message_and_blocks_bots(): void
     {
-        $this->post('/contato-enviar', ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi', 'subject' => 'Vendas', 'locale' => 'en'])->assertSessionHas('contact_ok', 'Message sent. We will contact you soon.');
+        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi', 'subject' => 'Vendas', 'locale' => 'en', 'captcha' => '7'])->assertSessionHas('contact_ok', 'Message sent. We will contact you soon.');
         $this->assertSame('en', ContactMessage::first()->locale);
 
         $this->post('/contato-enviar', ['name' => 'Bot', 'email' => 'b@example.com', 'message' => 'spam', 'website' => 'x']);
@@ -145,7 +207,7 @@ class PortalTest extends TestCase
     public function test_every_admin_screen_renders(): void
     {
         $this->actingAs($this->admin());
-        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/users', '/admin/users/create', '/admin/roles/create', '/admin/perfil'] as $url) {
+        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/users', '/admin/users/create', '/admin/roles', '/admin/roles/create', '/admin/perfil'] as $url) {
             $this->get($url)->assertOk();
         }
         foreach (Block::all() as $block) {

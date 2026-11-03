@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'contact_intro' => 'Get in touch with the :name team.',
+    'home' => 'Home',
+    'contact_send' => 'Send your Message',
+    'contact_info' => 'Contact Information',
+    'contact_subject' => 'Subject',
+    'captcha_question' => 'What is :q?',
+    'captcha_wrong' => 'Incorrect verification answer. Please confirm you are not a robot.',
     'developed_by' => 'Developed by',
     'admin' => 'Admin area',
     'skip' => 'Skip to main content',

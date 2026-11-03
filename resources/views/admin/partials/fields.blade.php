@@ -8,53 +8,56 @@
     @endphp
 
     @if ($f['type'] === 'repeater')
-        <div data-repeater class="space-y-3">
-            <h3 class="font-semibold">{{ $f['label'] }}</h3>
-            <div data-repeater-list class="space-y-3">
+        <div data-repeater class="mb-3">
+            <h6 class="fw-bold mt-3">{{ $f['label'] }}</h6>
+            <div data-repeater-list>
                 @foreach (array_values((array) $value) as $i => $item)
                     @include('admin.partials.repeater-item', ['f' => $f, 'item' => (array) $item, 'i' => $i, 'name' => $name, 'upload' => $upload])
                 @endforeach
             </div>
             <template>@include('admin.partials.repeater-item', ['f' => $f, 'item' => [], 'i' => '__i__', 'name' => $name, 'upload' => $upload])</template>
-            <button type="button" data-repeater-add class="adm-btn-light">+ Adicionar</button>
+            <button type="button" data-repeater-add class="btn-moc-outline btn btn-sm"><i class="fas fa-plus me-1"></i>Adicionar</button>
         </div>
     @elseif ($f['tr'])
-        <div>
-            <label class="adm-label">{{ $f['label'] }}</label>
+        <div class="mb-3">
+            <label class="form-label">{{ $f['label'] }}</label>
             @foreach ($langs as $l)
                 @php $v = is_array($value) ? ($value[$l->code] ?? '') : ($l->is_default ? (string) $value : ''); @endphp
                 <div data-lang-field="{{ $l->code }}">
                     @if ($f['type'] === 'html')
-                        <textarea data-html name="{{ $name }}[{{ $l->code }}]" rows="4" class="adm-input">{{ $v }}</textarea>
+                        <textarea data-html name="{{ $name }}[{{ $l->code }}]" rows="4" class="form-control">{{ $v }}</textarea>
                     @elseif ($f['type'] === 'textarea')
-                        <textarea name="{{ $name }}[{{ $l->code }}]" rows="3" class="adm-input">{{ $v }}</textarea>
+                        <textarea name="{{ $name }}[{{ $l->code }}]" rows="3" class="form-control">{{ $v }}</textarea>
                     @else
-                        <input name="{{ $name }}[{{ $l->code }}]" value="{{ $v }}" class="adm-input">
+                        <input name="{{ $name }}[{{ $l->code }}]" value="{{ $v }}" class="form-control">
                     @endif
                 </div>
             @endforeach
         </div>
     @elseif (in_array($f['type'], ['image', 'file'], true))
-        <div data-media>
-            <label class="adm-label">{{ $f['label'] }}</label>
+        <div data-media class="mb-3">
+            <label class="form-label">{{ $f['label'] }}</label>
             <input type="hidden" name="{{ $name }}" value="{{ $value }}">
             @if ($value)
-                @if ($f['type'] === 'image')
-                    <img data-preview src="{{ media($value) }}" alt="" class="mb-2 max-h-28 rounded border border-slate-200 bg-slate-50">
-                @else
-                    <a data-preview href="{{ media($value) }}" target="_blank" class="mb-2 block text-sm text-emerald-700 underline">{{ basename($value) }}</a>
-                @endif
-                <button type="button" data-clear-media class="adm-btn-danger mb-2">Remover</button>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    @if ($f['type'] === 'image')
+                        <img data-preview src="{{ media($value) }}" alt="" class="media-preview">
+                    @else
+                        <a data-preview href="{{ media($value) }}" target="_blank" rel="noopener"><i class="fas fa-file-pdf me-1"></i>{{ basename($value) }}</a>
+                    @endif
+                    <button type="button" data-clear-media class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-1"></i>Remover</button>
+                </div>
             @endif
-            <input type="file" name="{{ $upload }}" accept="{{ $f['type'] === 'image' ? 'image/jpeg,image/png,image/gif,image/webp,.ico' : 'application/pdf,image/jpeg,image/png,image/gif,image/webp' }}" class="adm-input">
+            <input type="file" name="{{ $upload }}" accept="{{ $f['type'] === 'image' ? 'image/jpeg,image/png,image/gif,image/webp,.ico' : 'application/pdf,image/jpeg,image/png,image/gif,image/webp' }}" class="form-control">
         </div>
     @elseif ($f['type'] === 'toggle')
-        <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" name="{{ $name }}" value="1" @checked($value) class="size-4 accent-emerald-700"> {{ $f['label'] }}
-        </label>
+        <div class="form-check mb-3">
+            <input type="checkbox" name="{{ $name }}" value="1" @checked($value) class="form-check-input">
+            <label class="form-check-label">{{ $f['label'] }}</label>
+        </div>
     @elseif ($f['type'] === 'color')
-        <div><label class="adm-label">{{ $f['label'] }}</label><input type="color" name="{{ $name }}" value="{{ $value ?: '#000000' }}" class="h-10 w-20 rounded border border-slate-300"></div>
+        <div class="mb-3"><label class="form-label">{{ $f['label'] }}</label><input type="color" name="{{ $name }}" value="{{ $value ?: '#000000' }}" class="form-control form-control-color"></div>
     @else
-        <div><label class="adm-label">{{ $f['label'] }}</label><input name="{{ $name }}" value="{{ $value }}" class="adm-input"></div>
+        <div class="mb-3"><label class="form-label">{{ $f['label'] }}</label><input name="{{ $name }}" value="{{ $value }}" class="form-control"></div>
     @endif
 @endforeach

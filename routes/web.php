@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [Admin\AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [Admin\AuthController::class, 'login'])->middleware('throttle:20,1');
+    Route::get('recuperar-senha', [Admin\PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('recuperar-senha', [Admin\PasswordResetController::class, 'email'])->middleware('throttle:5,1');
+    Route::get('redefinir-senha/{token}', [Admin\PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('redefinir-senha', [Admin\PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 
     Route::middleware(['auth', AdminAccess::class])->group(function () {
         Route::post('logout', [Admin\AuthController::class, 'logout'])->name('logout');
@@ -48,7 +52,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::middleware(AdminAccess::class.':users')->group(function () {
             Route::resource('users', Admin\UserController::class)->except('show');
-            Route::resource('roles', Admin\RoleController::class)->except(['index', 'show']);
+            Route::resource('roles', Admin\RoleController::class)->except('show');
         });
     });
 });

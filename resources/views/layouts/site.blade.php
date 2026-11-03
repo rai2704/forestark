@@ -30,7 +30,7 @@
         @endforeach
     }</style>
 </head>
-<body class="overflow-x-hidden">
+<body class="overflow-x-hidden pb-[69px]">
 <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-white focus:p-3 focus:text-black">{{ __('site.skip') }}</a>
 <header class="relative">
     <div class="bg-white py-2.5 text-[13px]">
@@ -127,7 +127,7 @@
                         <input type="email" name="email" required placeholder="{{ $site['footer_placeholder'] }}" aria-label="{{ $site['footer_placeholder'] }}" class="size-full rounded-[10px] bg-[#2d2d2d] pr-[58px] pl-[15px] text-[#777] outline-none">
                         <button aria-label="{{ $site['footer_subscribe'] }}" class="absolute inset-y-0 right-0 w-[55px] rounded-r-[10px] bg-brand text-[20px] text-white"><i class="fa fa-arrow"></i></button>
                     </form>
-                    @error('email')<p class="mb-3 text-white">{{ $message }}</p>@enderror
+                    @error('email', 'subscribe')<p class="mb-3 text-white">{{ $message }}</p>@enderror
                     <p>{{ $site['footer_subscribe_text'] }}</p>
                     @if ($whats)
                         <ul><li class="mt-[35px] mr-[5px] inline-block"><a href="{{ $whats }}" target="_blank" rel="noopener" aria-label="WhatsApp" class="block size-10 rounded-full bg-[#2d2d2d] text-center text-[13px] leading-10 text-[#777] transition hover:bg-brand hover:text-white"><i class="fa fa-whatsapp"></i></a></li></ul>
@@ -137,19 +137,15 @@
         </div>
     </div>
 
-    <div class="bg-footer-bottom py-[22px] text-center">
-        <div class="ctn relative">
-            <div class="px-10">
-                <p>{{ $copy }}</p>
-                <p><a href="{{ Site::url('mapa-do-site') }}" class="transition hover:text-white">{{ __('site.sitemap') }}</a></p>
-                <p>{{ __('site.developed_by') }} <a href="{{ config('portal.developer.url') }}" target="_blank" rel="noopener" class="font-semibold text-white transition hover:text-brand">{{ config('portal.developer.name') }}</a> - {{ config('portal.developer.slogan') }}</p>
-            </div>
-            <a href="{{ url('admin') }}" rel="nofollow" title="{{ __('site.admin') }}" aria-label="{{ __('site.admin') }}" class="absolute top-1/2 right-[15px] -translate-y-1/2 text-[18px] text-white transition hover:text-brand"><i class="fa fa-lock"></i></a>
+    <div data-footer-bar class="fixed inset-x-0 bottom-0 z-[90] bg-footer-bottom py-2 text-center xl:py-[22px]">
+        <div class="ctn flex flex-col items-center gap-1 text-center text-[13px] xl:flex-row xl:justify-between xl:gap-4 xl:text-left">
+            <p data-footer-left class="xl:whitespace-nowrap">{{ $copy }} | <a href="{{ Site::url('mapa-do-site') }}" class="transition hover:text-white">{{ __('site.sitemap') }}</a></p>
+            <p data-footer-right class="xl:whitespace-nowrap">{{ __('site.developed_by') }} <a href="{{ config('portal.developer.url') }}" target="_blank" rel="noopener" class="font-semibold text-white transition hover:text-brand">{{ config('portal.developer.name') }}</a> - {{ config('portal.developer.slogan') }} <a href="{{ url('admin') }}" target="_blank" rel="nofollow noopener" title="{{ __('site.admin') }}" aria-label="{{ __('site.admin') }}" class="ml-2 text-[16px] text-white transition hover:text-brand"><i class="fa fa-lock"></i></a></p>
         </div>
     </div>
 </footer>
 
-<button type="button" data-top aria-label="{{ __('site.top') }}" class="fixed right-[5px] bottom-2.5 z-[99] hidden size-[25px] rounded-[3px] bg-brand text-center text-[18px] text-white"><i class="fa fa-up"></i></button>
+<button type="button" data-top aria-label="{{ __('site.top') }}" style="bottom:calc(var(--bar-h, 69px) + 10px)" class="fixed right-[5px] z-[99] hidden size-[25px] rounded-[3px] bg-brand text-center text-[18px] text-white"><i class="fa fa-up"></i></button>
 @if (app()->getLocale() === 'pt')
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>

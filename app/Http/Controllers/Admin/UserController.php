@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        return view('admin.users.index', ['users' => User::with('role')->orderBy('name')->get(), 'roles' => Role::withCount('users')->orderBy('name')->get()]);
+        return view('admin.users.index', ['users' => User::with('role')->orderBy('name')->get()]);
     }
 
     public function create()

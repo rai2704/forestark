@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ContactMessage;
 use App\Models\Page;
 use App\Models\Subscriber;
+use App\Support\Captcha;
 use App\Support\Site;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -61,6 +62,8 @@ class SiteController extends Controller
             'other' => 'nullable|string|max:150',
             'message' => 'required|string|max:5000',
         ]);
+        Captcha::verify($request);
+
         $data['subject'] = ($data['other'] ?? null) ?: ($data['subject'] ?? null);
         unset($data['other']);
         $message = ContactMessage::create($data + ['locale' => app()->getLocale()]);
@@ -73,7 +76,7 @@ class SiteController extends Controller
     public function subscribe(Request $request)
     {
         $this->applyLocale($request);
-        $data = $request->validate(['email' => 'required|email|max:190']);
+        $data = $request->validateWithBag('subscribe', ['email' => 'required|email|max:190']);
         Subscriber::firstOrCreate(['email' => strtolower($data['email'])], ['locale' => app()->getLocale()]);
 
         return back()->with('subscribe_ok', Site::settings()['msg_subscribe_ok']);

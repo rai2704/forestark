@@ -3,6 +3,18 @@ import './a11y';
 document.documentElement.classList.add('js');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// A faixa fixa do rodapé reserva o próprio espaço no fim da página
+const footerBar = document.querySelector('[data-footer-bar]');
+if (footerBar) {
+    const fitBar = () => {
+        const h = footerBar.offsetHeight;
+        document.documentElement.style.setProperty('--bar-h', `${h}px`);
+        document.body.style.paddingBottom = `${h}px`;
+    };
+    new ResizeObserver(fitBar).observe(footerBar);
+    fitBar();
+}
+
 // Revela elementos com animação ao entrarem na tela
 const wow = new IntersectionObserver((entries) => {
     entries.forEach((e) => {

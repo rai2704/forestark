@@ -422,7 +422,7 @@ class PortalContentSeeder extends Seeder
                 'email' => $this->l('Email', 'Email', 'Correo electrónico'),
                 'phone' => $this->l('Telefone/WhatsApp', 'Phone/WhatsApp', 'Teléfono/WhatsApp'),
                 'other' => $this->l('Outro assunto', 'Other subject', 'Otro asunto'),
-                'message' => $this->l('Informe o motivo solictação de retorno de contato', 'Tell us why you would like us to contact you', 'Indique el motivo de su solicitud de contacto'),
+                'message' => $this->l('Mensagem', 'Message', 'Mensaje'),
                 'button' => $this->l('Enviar', 'Send', 'Enviar'),
                 'items' => [
                     ['label' => $this->l('Produtos', 'Products', 'Productos')],
