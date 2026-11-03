@@ -17,8 +17,10 @@ O seed cria o conteúdo inicial e exibe uma única vez a senha do primeiro admin
 
 ## Atualizar a produção
 
+No servidor, como root, na raiz do projeto:
+
 ```
-./deploy.sh
+bash deploy.sh
 ```
 
 ## Testes

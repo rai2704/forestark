@@ -62,6 +62,13 @@ class PortalTest extends TestCase
         $this->get('/')->assertSee('Contrato')->assertSee('uploads/servicos/pmfs.pdf')->assertDontSee('Sem arquivo');
     }
 
+    public function test_production_redirects_http_to_https(): void
+    {
+        $this->app['env'] = 'production';
+        $this->get('http://forestark.test/contato?a=1')->assertRedirect('https://forestark.test/contato?a=1')->assertStatus(301);
+        $this->get('https://forestark.test/contato')->assertOk();
+    }
+
     public function test_missing_translation_falls_back_to_default_language(): void
     {
         Language::create(['code' => 'fr', 'name' => 'Français', 'position' => 9]);
