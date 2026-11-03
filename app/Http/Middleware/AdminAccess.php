@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminAccess
 {
-    public function handle(Request $request, Closure $next, string $module = '')
+    public function handle(Request $request, Closure $next, string $module = '', string $action = 'acessar')
     {
         $user = Auth::user();
 
@@ -18,7 +18,7 @@ class AdminAccess
             return redirect()->route('admin.login');
         }
 
-        abort_if($module && ! $user->canAccess($module), 403, 'Sem permissão para este módulo.');
+        abort_if($module && ! $user->canAccess($module, $action), 403, 'Sem permissão para esta ação.');
 
         return $next($request);
     }

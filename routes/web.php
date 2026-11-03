@@ -6,7 +6,17 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\AdminAccess;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('admin')->name('admin.')->group(function () {
+$can = fn (string $module, string $action = 'acessar') => AdminAccess::class.":$module,$action";
+
+// Listagem, inclusão, edição e exclusão, cada uma com a sua permissão.
+$crud = function (string $name, string $controller, string $module) use ($can) {
+    Route::resource($name, $controller)->only('index')->middleware($can($module, 'acessar'));
+    Route::resource($name, $controller)->only(['create', 'store'])->middleware($can($module, 'incluir'));
+    Route::resource($name, $controller)->only(['edit', 'update'])->middleware($can($module, 'editar'));
+    Route::resource($name, $controller)->only('destroy')->middleware($can($module, 'excluir'));
+};
+
+Route::prefix('admin')->name('admin.')->group(function () use ($can, $crud) {
     Route::get('login', [Admin\AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [Admin\AuthController::class, 'login'])->middleware('throttle:20,1');
     Route::get('recuperar-senha', [Admin\PasswordResetController::class, 'request'])->name('password.request');
@@ -14,49 +24,53 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('redefinir-senha/{token}', [Admin\PasswordResetController::class, 'edit'])->name('password.reset');
     Route::post('redefinir-senha', [Admin\PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 
-    Route::middleware(['auth', AdminAccess::class])->group(function () {
+    Route::middleware(['auth', AdminAccess::class])->group(function () use ($can, $crud) {
         Route::post('logout', [Admin\AuthController::class, 'logout'])->name('logout');
         Route::get('/', Admin\DashboardController::class)->name('home');
         Route::get('perfil', [Admin\AuthController::class, 'profile'])->name('profile');
         Route::put('perfil', [Admin\AuthController::class, 'updateProfile']);
 
-        Route::middleware(AdminAccess::class.':pages')->group(function () {
-            Route::resource('pages', Admin\PageController::class)->except('show');
-            Route::post('pages/{page}/blocks', [Admin\BlockController::class, 'store'])->name('blocks.store');
+        $crud('pages', Admin\PageController::class, 'pages');
+        Route::get('pages/{page}/blocos', [Admin\PageController::class, 'blocks'])->name('pages.blocks')->middleware($can('pages'));
+        Route::get('banners', [Admin\BlockController::class, 'banners'])->name('banners')->middleware($can('pages'));
+
+        Route::post('pages/{page}/blocks', [Admin\BlockController::class, 'store'])->name('blocks.store')->middleware($can('pages', 'incluir'));
+        Route::post('blocks/{block}/duplicate', [Admin\BlockController::class, 'duplicate'])->name('blocks.duplicate')->middleware($can('pages', 'incluir'));
+        Route::delete('blocks/{block}', [Admin\BlockController::class, 'destroy'])->name('blocks.destroy')->middleware($can('pages', 'excluir'));
+        Route::middleware($can('pages', 'editar'))->group(function () {
             Route::get('blocks/{block}/edit', [Admin\BlockController::class, 'edit'])->name('blocks.edit');
             Route::put('blocks/{block}', [Admin\BlockController::class, 'update'])->name('blocks.update');
             Route::post('blocks/{block}/move', [Admin\BlockController::class, 'move'])->name('blocks.move');
             Route::post('blocks/{block}/toggle', [Admin\BlockController::class, 'toggle'])->name('blocks.toggle');
-            Route::post('blocks/{block}/duplicate', [Admin\BlockController::class, 'duplicate'])->name('blocks.duplicate');
-            Route::delete('blocks/{block}', [Admin\BlockController::class, 'destroy'])->name('blocks.destroy');
+            Route::get('blocks/{block}/itens/{repeater}/{index}/edit', [Admin\BlockItemController::class, 'edit'])->whereNumber('index')->name('blocks.items.edit');
+            Route::put('blocks/{block}/itens/{repeater}/{index}', [Admin\BlockItemController::class, 'update'])->whereNumber('index')->name('blocks.items.update');
+            Route::post('blocks/{block}/itens/{repeater}/{index}/move', [Admin\BlockItemController::class, 'move'])->whereNumber('index')->name('blocks.items.move');
         });
+        Route::get('blocks/{block}/itens/{repeater}/novo', [Admin\BlockItemController::class, 'create'])->name('blocks.items.create')->middleware($can('pages', 'incluir'));
+        Route::post('blocks/{block}/itens/{repeater}', [Admin\BlockItemController::class, 'store'])->name('blocks.items.store')->middleware($can('pages', 'incluir'));
+        Route::delete('blocks/{block}/itens/{repeater}/{index}', [Admin\BlockItemController::class, 'destroy'])->whereNumber('index')->name('blocks.items.destroy')->middleware($can('pages', 'excluir'));
 
-        Route::middleware(AdminAccess::class.':menus')->group(function () {
-            Route::resource('menus', Admin\MenuController::class)->except('show');
-            Route::post('menus/{menu}/move', [Admin\MenuController::class, 'move'])->name('menus.move');
-        });
+        $crud('menus', Admin\MenuController::class, 'menus');
+        Route::post('menus/{menu}/move', [Admin\MenuController::class, 'move'])->name('menus.move')->middleware($can('menus', 'editar'));
 
-        Route::middleware(AdminAccess::class.':languages')->group(function () {
-            Route::resource('languages', Admin\LanguageController::class)->only(['index', 'store', 'update', 'destroy']);
-        });
+        $crud('languages', Admin\LanguageController::class, 'languages');
 
-        Route::middleware(AdminAccess::class.':settings')->group(function () {
-            Route::get('configuracoes', [Admin\SettingController::class, 'edit'])->name('settings');
-            Route::put('configuracoes', [Admin\SettingController::class, 'update']);
-        });
+        Route::get('configuracoes', [Admin\SettingController::class, 'index'])->name('settings')->middleware($can('settings'));
+        Route::get('configuracoes/{group}', [Admin\SettingController::class, 'edit'])->name('settings.edit')->middleware($can('settings', 'editar'));
+        Route::put('configuracoes/{group}', [Admin\SettingController::class, 'update'])->name('settings.update')->middleware($can('settings', 'editar'));
 
-        Route::middleware(AdminAccess::class.':messages')->group(function () {
-            Route::resource('messages', Admin\MessageController::class)->only(['index', 'show', 'destroy']);
-            Route::get('inscritos', [Admin\MessageController::class, 'subscribers'])->name('subscribers');
-            Route::delete('inscritos/{subscriber}', [Admin\MessageController::class, 'destroySubscriber'])->name('subscribers.destroy');
-            Route::resource('newsletters', Admin\NewsletterController::class)->except('show');
-            Route::post('newsletters/{newsletter}/enviar', [Admin\NewsletterController::class, 'send'])->name('newsletters.send');
-        });
+        Route::get('messages', [Admin\MessageController::class, 'index'])->name('messages.index')->middleware($can('messages'));
+        Route::get('messages/{message}', [Admin\MessageController::class, 'show'])->name('messages.show')->middleware($can('messages'));
+        Route::delete('messages/{message}', [Admin\MessageController::class, 'destroy'])->name('messages.destroy')->middleware($can('messages', 'excluir'));
 
-        Route::middleware(AdminAccess::class.':users')->group(function () {
-            Route::resource('users', Admin\UserController::class)->except('show');
-            Route::resource('roles', Admin\RoleController::class)->except('show');
-        });
+        Route::get('inscritos', [Admin\MessageController::class, 'subscribers'])->name('subscribers')->middleware($can('subscribers'));
+        Route::delete('inscritos/{subscriber}', [Admin\MessageController::class, 'destroySubscriber'])->name('subscribers.destroy')->middleware($can('subscribers', 'excluir'));
+
+        $crud('newsletters', Admin\NewsletterController::class, 'newsletters');
+        Route::post('newsletters/{newsletter}/enviar', [Admin\NewsletterController::class, 'send'])->name('newsletters.send')->middleware($can('newsletters', 'editar'));
+
+        $crud('users', Admin\UserController::class, 'users');
+        Route::get('roles', [Admin\RoleController::class, 'index'])->name('roles.index')->middleware($can('users'));
     });
 });
 

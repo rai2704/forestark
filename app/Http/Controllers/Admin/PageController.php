@@ -15,6 +15,11 @@ class PageController extends Controller
         return view('admin.pages.index', ['pages' => Page::withCount('blocks')->orderBy('slug')->get()]);
     }
 
+    public function blocks(Page $page)
+    {
+        return view('admin.pages.blocks', ['page' => $page->load('blocks')]);
+    }
+
     public function create()
     {
         return view('admin.pages.form', ['page' => new Page(['data' => [], 'is_published' => true])]);
@@ -24,19 +29,19 @@ class PageController extends Controller
     {
         $page = Page::create($this->payload($request));
 
-        return redirect()->route('admin.pages.edit', $page)->with('ok', 'Página criada. Agora adicione os blocos.');
+        return redirect()->route('admin.pages.blocks', $page)->with('ok', 'Página criada. Agora adicione os blocos.');
     }
 
     public function edit(Page $page)
     {
-        return view('admin.pages.form', ['page' => $page->load('blocks')]);
+        return view('admin.pages.form', ['page' => $page]);
     }
 
     public function update(Request $request, Page $page)
     {
         $page->update($this->payload($request, $page));
 
-        return back()->with('ok', 'Página salva.');
+        return redirect()->route('admin.pages.index')->with('ok', 'Página salva.');
     }
 
     public function destroy(Page $page)

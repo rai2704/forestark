@@ -1,6 +1,7 @@
 @php
     $u = auth()->user();
     $act = fn (string ...$names) => request()->routeIs(...$names) ? ' active' : '';
+    $onBanners = request()->route('block')?->type === 'hero_slider';
 @endphp
 
 <div class="sidebar-group-label"><i class="fas fa-tachometer-alt"></i>Painel</div>
@@ -9,24 +10,31 @@
 @if ($u->canAccess('pages') || $u->canAccess('menus'))
     <div class="sidebar-group-label"><i class="fas fa-edit"></i>Conteúdo</div>
     @if ($u->canAccess('pages'))
-        <a href="{{ route('admin.pages.index') }}" class="sidebar-nav-link{{ $act('admin.pages.*', 'admin.blocks.*') }}"><i class="fas fa-file-alt"></i> Páginas e Blocos</a>
+        <a href="{{ route('admin.banners') }}" class="sidebar-nav-link{{ $onBanners ? ' active' : '' }}"><i class="fas fa-images"></i> Banners</a>
+        <a href="{{ route('admin.pages.index') }}" class="sidebar-nav-link{{ $onBanners ? '' : $act('admin.pages.*', 'admin.blocks.*') }}"><i class="fas fa-file-alt"></i> Páginas e Blocos</a>
     @endif
     @if ($u->canAccess('menus'))
         <a href="{{ route('admin.menus.index') }}" class="sidebar-nav-link{{ $act('admin.menus.*') }}"><i class="fas fa-bars"></i> Menus</a>
     @endif
 @endif
 
-@if ($u->canAccess('messages'))
+@if ($u->canAccess('messages') || $u->canAccess('subscribers') || $u->canAccess('newsletters'))
     <div class="sidebar-group-label"><i class="fas fa-inbox"></i>Mensagens</div>
-    <a href="{{ route('admin.messages.index') }}" class="sidebar-nav-link{{ $act('admin.messages.*') }}"><i class="fas fa-envelope"></i> Contatos</a>
-    <a href="{{ route('admin.subscribers') }}" class="sidebar-nav-link{{ $act('admin.subscribers*') }}"><i class="fas fa-user-plus"></i> Inscritos</a>
-    <a href="{{ route('admin.newsletters.index') }}" class="sidebar-nav-link{{ $act('admin.newsletters.*') }}"><i class="fas fa-paper-plane"></i> Newsletter</a>
+    @if ($u->canAccess('messages'))
+        <a href="{{ route('admin.messages.index') }}" class="sidebar-nav-link{{ $act('admin.messages.*') }}"><i class="fas fa-envelope"></i> Contatos</a>
+    @endif
+    @if ($u->canAccess('subscribers'))
+        <a href="{{ route('admin.subscribers') }}" class="sidebar-nav-link{{ $act('admin.subscribers*') }}"><i class="fas fa-user-plus"></i> Inscritos</a>
+    @endif
+    @if ($u->canAccess('newsletters'))
+        <a href="{{ route('admin.newsletters.index') }}" class="sidebar-nav-link{{ $act('admin.newsletters.*') }}"><i class="fas fa-paper-plane"></i> Newsletter</a>
+    @endif
 @endif
 
 @if ($u->canAccess('languages') || $u->canAccess('settings') || $u->canAccess('users'))
     <div class="sidebar-group-label"><i class="fas fa-cog"></i>Sistema</div>
     @if ($u->canAccess('settings'))
-        <a href="{{ route('admin.settings') }}" class="sidebar-nav-link{{ $act('admin.settings') }}"><i class="fas fa-sliders-h"></i> Configurações</a>
+        <a href="{{ route('admin.settings') }}" class="sidebar-nav-link{{ $act('admin.settings*') }}"><i class="fas fa-sliders-h"></i> Configurações</a>
     @endif
     @if ($u->canAccess('languages'))
         <a href="{{ route('admin.languages.index') }}" class="sidebar-nav-link{{ $act('admin.languages.*') }}"><i class="fas fa-language"></i> Idiomas</a>

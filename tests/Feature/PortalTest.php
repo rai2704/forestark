@@ -7,9 +7,11 @@ use App\Mail\NewsletterMail;
 use App\Models\Block;
 use App\Models\ContactMessage;
 use App\Models\Language;
+use App\Models\MenuItem;
 use App\Models\Newsletter;
 use App\Models\Page;
 use App\Models\Role;
+use App\Models\SiteSetting;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Support\Site;
@@ -35,11 +37,11 @@ class PortalTest extends TestCase
         Site::flush();
     }
 
-    private function admin(array $roleAttrs = ['full_access' => true]): User
+    private function admin(?array $permissions = null): User
     {
-        $role = Role::create($roleAttrs + ['name' => 'R'.uniqid(), 'permissions' => []]);
+        $role = Role::firstOrCreate(['name' => $permissions === null ? 'Total' : 'Limitado'], ['full_access' => $permissions === null]);
 
-        return User::factory()->create(['role_id' => $role->id, 'is_active' => true]);
+        return User::factory()->create(['role_id' => $role->id, 'is_active' => true, 'permissions' => $permissions ?? []]);
     }
 
     public function test_pages_render_in_each_language(): void
@@ -269,19 +271,137 @@ class PortalTest extends TestCase
         $this->assertSame(1, ContactMessage::count());
     }
 
-    public function test_admin_requires_login_and_permission(): void
+    public function test_each_action_requires_its_own_permission(): void
     {
         $this->get('/admin')->assertRedirect('/admin/login');
 
-        $limited = $this->admin(['full_access' => false, 'permissions' => ['menus']]);
-        $this->actingAs($limited)->get('/admin/menus')->assertOk();
-        $this->actingAs($limited)->get('/admin/pages')->assertForbidden();
+        $user = $this->admin(['menus' => ['acessar' => true]]);
+        $this->actingAs($user);
+        $item = MenuItem::first();
+
+        $this->get('/admin/menus')->assertOk()->assertDontSee(route('admin.menus.create', ['location' => 'header']), false);
+        $this->get('/admin/pages')->assertForbidden();
+        $this->get('/admin/menus/create')->assertForbidden();
+        $this->get("/admin/menus/{$item->id}/edit")->assertForbidden();
+        $this->delete("/admin/menus/{$item->id}")->assertForbidden();
+        $this->assertNotNull($item->fresh());
+
+        $user->update(['permissions' => ['menus' => ['acessar' => true, 'excluir' => true]]]);
+        $this->delete("/admin/menus/{$item->id}")->assertRedirect();
+        $this->assertNull($item->fresh());
+    }
+
+    public function test_user_form_saves_permission_grid(): void
+    {
+        $this->actingAs($this->admin());
+        $role = Role::where('name', 'Usuário')->first();
+
+        $this->post('/admin/users', ['name' => 'Ana', 'email' => 'ana@example.com', 'role_id' => $role->id, 'is_active' => 1, 'password' => 'senha-longa-123', 'password_confirmation' => 'senha-longa-123',
+            'perm' => ['pages' => ['acessar' => 1, 'editar' => 1], 'inexistente' => ['acessar' => 1]]])->assertRedirect('/admin/users');
+
+        $ana = User::where('email', 'ana@example.com')->first();
+        $this->assertEquals(['pages' => ['acessar' => true, 'editar' => true]], $ana->permissions);
+        $this->assertTrue($ana->canAccess('pages', 'editar'));
+        $this->assertFalse($ana->canAccess('pages', 'excluir'));
+
+        $this->get('/admin/roles')->assertOk()->assertSee('Matriz de permissões')->assertSee('Ana');
+    }
+
+    public function test_limited_user_cannot_escalate_privileges(): void
+    {
+        $limited = $this->admin(['users' => ['acessar' => true, 'incluir' => true, 'editar' => true, 'excluir' => true]]);
+        $full = $this->admin();
+        $fullRole = $full->role;
+        $this->actingAs($limited);
+
+        $this->post('/admin/users', ['name' => 'X', 'email' => 'x@example.com', 'role_id' => $fullRole->id, 'password' => 'senha-longa-123', 'password_confirmation' => 'senha-longa-123'])->assertForbidden();
+        $this->put("/admin/users/{$limited->id}", ['name' => 'L', 'email' => $limited->email, 'role_id' => $limited->role_id, 'perm' => ['settings' => ['acessar' => 1]]])->assertForbidden();
+        $this->get("/admin/users/{$full->id}/edit")->assertForbidden();
+        $this->delete("/admin/users/{$full->id}")->assertForbidden();
+        $this->assertFalse($limited->fresh()->canAccess('settings'));
+    }
+
+    public function test_block_items_have_listing_and_their_own_edit_screen(): void
+    {
+        $this->actingAs($this->admin());
+        $hero = Block::where('type', 'hero_slider')->first();
+        $this->get('/admin/banners')->assertRedirect("/admin/blocks/{$hero->id}/edit");
+
+        $this->get("/admin/blocks/{$hero->id}/edit")->assertOk()->assertSee('Forest Ark Investiments')->assertSee("/admin/blocks/{$hero->id}/itens/items/0/edit", false)->assertDontSee('name="data[items]', false);
+        $this->get("/admin/blocks/{$hero->id}/itens/items/0/edit")->assertOk()->assertSee('name="data[title][en]"', false);
+        $this->get("/admin/blocks/{$hero->id}/itens/items/99/edit")->assertNotFound();
+        $this->get("/admin/blocks/{$hero->id}/itens/inexistente/novo")->assertNotFound();
+
+        $this->post("/admin/blocks/{$hero->id}/itens/items", ['data' => ['title' => ['pt' => 'Novo banner'], 'image' => 'uploads/site/logo.png', 'show_text' => 1]])->assertRedirect("/admin/blocks/{$hero->id}/edit");
+        $this->assertCount(4, $hero->fresh()->data['items']);
+
+        $this->put("/admin/blocks/{$hero->id}/itens/items/3", ['data' => ['title' => ['pt' => 'Editado'], 'image' => 'uploads/site/logo.png']]);
+        $this->assertSame('Editado', $hero->fresh()->data['items'][3]['title']['pt']);
+        $this->assertFalse($hero->fresh()->data['items'][3]['show_text']);
+
+        $this->post("/admin/blocks/{$hero->id}/itens/items/3/move", ['direction' => 'up']);
+        $this->assertSame('Editado', $hero->fresh()->data['items'][2]['title']['pt']);
+
+        $this->delete("/admin/blocks/{$hero->id}/itens/items/2");
+        $this->assertCount(3, $hero->fresh()->data['items']);
+
+        $about = Block::where('type', 'about_accordion')->first();
+        $count = count($about->data['items']);
+        $this->put("/admin/blocks/{$about->id}", ['data' => ['title' => ['pt' => 'Plano']]]);
+        $this->assertSame('Plano', $about->fresh()->data['title']['pt']);
+        $this->assertCount($count, $about->fresh()->data['items']);
+    }
+
+    public function test_every_image_field_informs_its_ideal_size(): void
+    {
+        $walk = function (array $fields) use (&$walk) {
+            foreach ($fields as $f) {
+                if ($f['type'] === 'image') {
+                    $this->assertCount(2, $f['size'] ?? [], "Campo {$f['name']} sem tamanho ideal");
+                }
+                if ($f['type'] === 'repeater') {
+                    $walk($f['fields']);
+                }
+            }
+        };
+        foreach (config('portal.blocks') as $block) {
+            $walk($block['fields']);
+        }
+        foreach (config('portal.settings_groups') as $fields) {
+            $walk($fields);
+        }
+
+        $this->actingAs($this->admin());
+        $hero = Block::where('type', 'hero_slider')->first();
+        $this->get("/admin/blocks/{$hero->id}/itens/items/0/edit")->assertSee('Tamanho ideal: 1920 × 1000 px')->assertSee('Imagem atual: 1000 × 500 px')->assertSee('menor que o ideal');
+        $this->get('/admin/configuracoes/identidade')->assertSee('Tamanho ideal: 200 × 103 px');
+    }
+
+    public function test_languages_are_listed_and_edited_on_their_own_screen(): void
+    {
+        $this->actingAs($this->admin());
+        $en = Language::where('code', 'en')->first();
+
+        $this->get('/admin/languages')->assertOk()->assertSee("/admin/languages/{$en->id}/edit", false)->assertDontSee('name="name"', false)->assertDontSee('name="flag"', false);
+        $this->get("/admin/languages/{$en->id}/edit")->assertOk()->assertSee('name="flag"', false);
+    }
+
+    public function test_settings_group_keeps_other_groups(): void
+    {
+        $this->actingAs($this->admin());
+        $this->get('/admin/configuracoes')->assertOk()->assertSee('/admin/configuracoes/contato', false);
+        $this->get('/admin/configuracoes/inexistente')->assertNotFound();
+        $this->put('/admin/configuracoes/contato', ['data' => ['email' => 'novo@example.com']])->assertRedirect('/admin/configuracoes');
+
+        $data = SiteSetting::current()->data;
+        $this->assertSame('novo@example.com', $data['email']);
+        $this->assertSame('Forest Ark Investiments', $data['site_name']);
     }
 
     public function test_every_admin_screen_renders(): void
     {
         $this->actingAs($this->admin());
-        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/newsletters', '/admin/newsletters/create', '/admin/users', '/admin/users/create', '/admin/roles', '/admin/roles/create', '/admin/perfil'] as $url) {
+        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/newsletters', '/admin/newsletters/create', '/admin/users', '/admin/users/create', '/admin/roles', '/admin/languages/create', '/admin/perfil'] as $url) {
             $this->get($url)->assertOk();
         }
         foreach (Block::all() as $block) {
@@ -301,16 +421,15 @@ class PortalTest extends TestCase
 
         $hero = Block::where('type', 'hero_slider')->first();
         $evil = UploadedFile::fake()->createWithContent('shell.php', '<?php echo 1;');
-        $this->put("/admin/blocks/{$hero->id}", ['data' => ['items' => [['image' => '']]], 'uploads' => ['items' => [['image' => $evil]]]])->assertSessionHasErrors('image');
+        $this->put("/admin/blocks/{$hero->id}/itens/items/0", ['data' => ['image' => ''], 'uploads' => ['image' => $evil]])->assertSessionHasErrors('image');
         $this->assertCount(3, $hero->fresh()->data['items']);
     }
 
     public function test_last_full_access_user_cannot_be_removed(): void
     {
         $admin = $this->admin();
-        $other = $this->admin(['full_access' => false]);
-        $this->actingAs($other);
-        $other->role->update(['permissions' => ['users']]);
-        $this->delete("/admin/users/{$admin->id}")->assertStatus(422);
+        $this->actingAs($admin);
+        $this->put("/admin/users/{$admin->id}", ['name' => 'A', 'email' => $admin->email, 'role_id' => Role::where('name', 'Usuário')->first()->id, 'is_active' => 1])->assertStatus(422);
+        $this->assertTrue($admin->fresh()->role->full_access);
     }
 }

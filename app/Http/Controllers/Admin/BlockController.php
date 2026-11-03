@@ -11,6 +11,17 @@ use Illuminate\Validation\Rule;
 
 class BlockController extends Controller
 {
+    /** Atalho do menu: abre a listagem de banners da página inicial. */
+    public function banners()
+    {
+        $block = Block::where('type', 'hero_slider')->whereHas('page', fn ($q) => $q->where('slug', ''))->first()
+            ?? Block::where('type', 'hero_slider')->first();
+
+        return $block
+            ? redirect()->route('admin.blocks.edit', $block)
+            : redirect()->route('admin.pages.index')->withErrors(['type' => 'Nenhum bloco de banner cadastrado. Adicione um em uma página.']);
+    }
+
     public function store(Request $request, Page $page)
     {
         $type = $request->validate(['type' => ['required', Rule::in(array_keys(config('portal.blocks')))]])['type'];
@@ -21,14 +32,20 @@ class BlockController extends Controller
 
     public function edit(Block $block)
     {
-        return view('admin.blocks.form', ['block' => $block]);
+        $fields = collect($block->schema()['fields']);
+
+        return view('admin.blocks.form', [
+            'block' => $block,
+            'scalars' => $fields->where('type', '!=', 'repeater')->values()->all(),
+            'repeaters' => $fields->where('type', 'repeater')->values()->all(),
+        ]);
     }
 
     public function update(Request $request, Block $block)
     {
+        $scalars = collect($block->schema()['fields'])->where('type', '!=', 'repeater')->values()->all();
         $block->update([
-            'data' => Content::fromInput($block->schema()['fields'], (array) $request->input('data', []), (array) $request->file('uploads', [])),
-            'is_visible' => $request->boolean('is_visible'),
+            'data' => array_replace($block->data ?? [], Content::fromInput($scalars, (array) $request->input('data', []), (array) $request->file('uploads', []))),
         ]);
 
         return back()->with('ok', 'Bloco salvo.');

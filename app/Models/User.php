@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role_id', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'is_active', 'permissions'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -26,6 +26,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'permissions' => 'array',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -36,10 +37,12 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function canAccess(string $module): bool
+    public function canAccess(string $module, string $action = 'acessar'): bool
     {
-        $role = $this->role;
+        if ($this->role?->full_access) {
+            return true;
+        }
 
-        return $role && ($role->full_access || in_array($module, $role->permissions ?? [], true));
+        return ! empty($this->permissions[$module][$action]);
     }
 }

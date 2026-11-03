@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Mews\Purifier\Facades\Purifier;
 
@@ -35,6 +36,22 @@ class Content
         }
 
         return $out;
+    }
+
+    /** Imagem e título de um item, para as listagens do admin. */
+    public static function summary(array $fields, array $item): array
+    {
+        $resolved = self::resolve($fields, $item, Site::defaultLocale());
+        $image = collect($fields)->firstWhere('type', 'image');
+        $title = '';
+        foreach ($fields as $f) {
+            if ($f['tr'] && in_array($f['type'], ['text', 'textarea', 'html'], true) && trim(strip_tags((string) $resolved[$f['name']])) !== '') {
+                $title = trim(html_entity_decode(strip_tags((string) $resolved[$f['name']])));
+                break;
+            }
+        }
+
+        return ['image' => $image ? ($resolved[$image['name']] ?? null) : null, 'title' => Str::limit($title, 90)];
     }
 
     /** Monta o JSON a gravar a partir do formulário, tratando uploads e higienizando HTML. */

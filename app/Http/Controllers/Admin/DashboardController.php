@@ -20,7 +20,7 @@ class DashboardController extends Controller
             'stats' => [
                 ['label' => 'Páginas', 'value' => Page::count(), 'icon' => 'fa-file-alt', 'url' => $link('pages', 'admin.pages.index')],
                 ['label' => 'Msgs Não Lidas', 'value' => ContactMessage::whereNull('read_at')->count(), 'icon' => 'fa-envelope', 'url' => $link('messages', 'admin.messages.index')],
-                ['label' => 'Inscritos', 'value' => Subscriber::count(), 'icon' => 'fa-user-plus', 'url' => $link('messages', 'admin.subscribers')],
+                ['label' => 'Inscritos', 'value' => Subscriber::count(), 'icon' => 'fa-user-plus', 'url' => $link('subscribers', 'admin.subscribers')],
                 ['label' => 'Idiomas', 'value' => Language::where('is_active', true)->count(), 'icon' => 'fa-language', 'url' => $link('languages', 'admin.languages.index')],
             ],
             'recent' => $u->canAccess('messages') ? ContactMessage::latest()->limit(5)->get() : null,

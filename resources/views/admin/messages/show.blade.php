@@ -14,5 +14,5 @@
         <p class="border-top pt-3 mb-0" style="white-space:pre-line;">{{ $message->message }}</p>
     </div>
 </div>
-<form method="post" action="{{ route('admin.messages.destroy', $message) }}" data-confirm="Excluir esta mensagem?">@csrf @method('DELETE')<button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash me-1"></i>Excluir</button></form>
+@if (auth()->user()->canAccess('messages', 'excluir'))<form method="post" action="{{ route('admin.messages.destroy', $message) }}" data-confirm="Excluir esta mensagem?">@csrf @method('DELETE')<button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash me-1"></i>Excluir</button></form>@endif
 @endsection

@@ -14,7 +14,12 @@ class LanguageController extends Controller
 
     public function index()
     {
-        return view('admin.languages', ['languages' => Language::orderBy('position')->get()]);
+        return view('admin.languages.index', ['languages' => Language::orderBy('position')->get()]);
+    }
+
+    public function create()
+    {
+        return view('admin.languages.form', ['language' => new Language(['is_active' => true])]);
     }
 
     public function store(Request $request)
@@ -25,9 +30,14 @@ class LanguageController extends Controller
             'flag' => self::FLAG_RULE,
         ]);
         abort_if(Page::where('slug', $data['code'])->exists(), 422, 'Já existe uma página com esse endereço.');
-        Language::create($data + ['position' => (int) Language::max('position') + 1, 'is_active' => true]);
+        Language::create($data + ['position' => (int) Language::max('position') + 1, 'is_active' => $request->boolean('is_active', true)]);
 
-        return back()->with('ok', 'Idioma adicionado. Os textos sem tradução aparecem no idioma padrão.');
+        return redirect()->route('admin.languages.index')->with('ok', 'Idioma adicionado. Os textos sem tradução aparecem no idioma padrão.');
+    }
+
+    public function edit(Language $language)
+    {
+        return view('admin.languages.form', ['language' => $language]);
     }
 
     public function update(Request $request, Language $language)
@@ -36,7 +46,7 @@ class LanguageController extends Controller
         $data['is_active'] = $language->is_default || $request->boolean('is_active');
         $language->update($data);
 
-        return back()->with('ok', 'Idioma salvo.');
+        return redirect()->route('admin.languages.index')->with('ok', 'Idioma salvo.');
     }
 
     public function destroy(Language $language)

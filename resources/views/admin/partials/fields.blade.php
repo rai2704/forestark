@@ -7,18 +7,7 @@
         $value = $data[$f['name']] ?? null;
     @endphp
 
-    @if ($f['type'] === 'repeater')
-        <div data-repeater class="mb-3">
-            <h6 class="fw-bold mt-3">{{ $f['label'] }}</h6>
-            <div data-repeater-list>
-                @foreach (array_values((array) $value) as $i => $item)
-                    @include('admin.partials.repeater-item', ['f' => $f, 'item' => (array) $item, 'i' => $i, 'name' => $name, 'upload' => $upload])
-                @endforeach
-            </div>
-            <template>@include('admin.partials.repeater-item', ['f' => $f, 'item' => [], 'i' => '__i__', 'name' => $name, 'upload' => $upload])</template>
-            <button type="button" data-repeater-add class="btn-moc-outline btn btn-sm"><i class="fas fa-plus me-1"></i>Adicionar</button>
-        </div>
-    @elseif ($f['tr'])
+    @if ($f['tr'])
         <div class="mb-3">
             <label class="form-label">{{ $f['label'] }}</label>
             @foreach ($langs as $l)
@@ -48,12 +37,26 @@
                     <button type="button" data-clear-media class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-1"></i>Remover</button>
                 </div>
             @endif
-            <input type="file" name="{{ $upload }}" accept="{{ $f['type'] === 'image' ? 'image/jpeg,image/png,image/gif,image/webp,.ico' : 'application/pdf,image/jpeg,image/png,image/gif,image/webp' }}" class="form-control">
+            @php
+                $size = $f['size'] ?? null;
+                $currentSize = $f['type'] === 'image' && $value && is_file(public_path($value)) ? @getimagesize(public_path($value)) : null;
+            @endphp
+            <input type="file" name="{{ $upload }}" accept="{{ $f['type'] === 'image' ? 'image/jpeg,image/png,image/gif,image/webp,.ico' : 'application/pdf,image/jpeg,image/png,image/gif,image/webp' }}" class="form-control" @if ($size) data-ideal-w="{{ $size[0] }}" data-ideal-h="{{ $size[1] }}" @endif>
+            @if ($size)
+                <div class="form-text" data-size-hint>
+                    <strong><i class="fas fa-ruler-combined me-1"></i>Tamanho ideal: {{ $size[0] }} × {{ $size[1] }} px.</strong>
+                    {{ $f['note'] ?? '' }} JPG, PNG, GIF ou WEBP, até 20 MB.
+                    @if ($currentSize)
+                        <span @class(['d-block', 'text-danger' => $currentSize[0] < $size[0] || $currentSize[1] < $size[1]])>Imagem atual: {{ $currentSize[0] }} × {{ $currentSize[1] }} px{{ $currentSize[0] < $size[0] || $currentSize[1] < $size[1] ? ' (menor que o ideal, pode perder nitidez)' : '' }}.</span>
+                    @endif
+                </div>
+                <div class="form-text fw-semibold" data-size-check></div>
+            @endif
         </div>
     @elseif ($f['type'] === 'toggle')
-        <div class="form-check mb-3">
-            <input type="checkbox" name="{{ $name }}" value="1" @checked($value) class="form-check-input">
-            <label class="form-check-label">{{ $f['label'] }}</label>
+        <div class="form-check form-switch mb-3">
+            <input type="checkbox" name="{{ $name }}" value="1" id="f-{{ md5($name) }}" @checked($value) class="form-check-input">
+            <label class="form-check-label" for="f-{{ md5($name) }}">{{ $f['label'] }}</label>
         </div>
     @elseif ($f['type'] === 'color')
         <div class="mb-3"><label class="form-label">{{ $f['label'] }}</label><input type="color" name="{{ $name }}" value="{{ $value ?: '#000000' }}" class="form-control form-control-color"></div>

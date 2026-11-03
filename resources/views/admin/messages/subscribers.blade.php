@@ -13,7 +13,7 @@
                         <td>{{ $s->email }}</td><td>{{ $s->locale }}</td>
                         <td><span class="badge {{ $s->confirmed_at ? 'bg-success' : 'bg-warning text-dark' }}">{{ $s->confirmed_at ? 'Confirmado' : 'Aguardando confirmação' }}</span></td>
                         <td>{{ $s->created_at->format('d/m/Y') }}</td>
-                        <td class="text-end"><form method="post" action="{{ route('admin.subscribers.destroy', $s) }}" data-confirm="Remover este inscrito?" class="d-inline">@csrf @method('DELETE')<button class="btn-action btn-action-del" title="Remover"><i class="fas fa-trash"></i></button></form></td>
+                        <td class="text-end">@if (auth()->user()->canAccess('subscribers', 'excluir'))<form method="post" action="{{ route('admin.subscribers.destroy', $s) }}" data-confirm="Remover este inscrito?" class="d-inline">@csrf @method('DELETE')<button class="btn-action btn-action-del" title="Remover"><i class="fas fa-trash"></i></button></form>@endif</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="text-center text-muted py-3">Nenhum registro.</td></tr>

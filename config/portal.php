@@ -3,6 +3,8 @@
 // Campos: type = text|textarea|html|url|image|file|toggle|color|repeater; tr = traduzível por idioma.
 $t = fn (string $name, string $label, string $type = 'text') => ['name' => $name, 'label' => $label, 'type' => $type, 'tr' => true];
 $s = fn (string $name, string $label, string $type = 'text') => ['name' => $name, 'label' => $label, 'type' => $type, 'tr' => false];
+// Imagem com o tamanho ideal: largura, altura e orientação para quem envia.
+$img = fn (string $name, string $label, int $w, int $h, string $note = '') => ['name' => $name, 'label' => $label, 'type' => 'image', 'tr' => false, 'size' => [$w, $h], 'note' => $note];
 $items = fn (string $label, array $fields) => ['name' => 'items', 'label' => $label, 'type' => 'repeater', 'tr' => false, 'fields' => $fields];
 
 return [
@@ -12,13 +14,17 @@ return [
         'url' => 'https://gapitecnologia.com.br',
     ],
 
+    'actions' => ['acessar' => 'Acessar', 'incluir' => 'Incluir', 'editar' => 'Editar', 'excluir' => 'Excluir'],
+
     'modules' => [
-        'pages' => 'Páginas e blocos',
-        'menus' => 'Menus',
-        'languages' => 'Idiomas',
-        'settings' => 'Aparência e configurações',
-        'messages' => 'Mensagens e inscritos',
-        'users' => 'Usuários e perfis',
+        'pages' => ['label' => 'Páginas, Blocos e Banners', 'group' => 'Conteúdo'],
+        'menus' => ['label' => 'Menus', 'group' => 'Conteúdo'],
+        'messages' => ['label' => 'Contatos', 'group' => 'Mensagens'],
+        'subscribers' => ['label' => 'Inscritos', 'group' => 'Mensagens'],
+        'newsletters' => ['label' => 'Newsletter', 'group' => 'Mensagens'],
+        'settings' => ['label' => 'Configurações', 'group' => 'Sistema'],
+        'languages' => ['label' => 'Idiomas', 'group' => 'Sistema'],
+        'users' => ['label' => 'Usuários', 'group' => 'Sistema'],
     ],
 
     'newsletter_fields' => [
@@ -39,8 +45,8 @@ return [
     'settings_groups' => [
         'Identidade' => [
             $s('site_name', 'Nome do site'),
-            $s('logo', 'Logo', 'image'),
-            $s('favicon', 'Favicon', 'image'),
+            $img('logo', 'Logo', 200, 103, 'PNG com fundo transparente. Aparece no menu e no rodapé.'),
+            $img('favicon', 'Favicon', 512, 512, 'Quadrado, em PNG. É o ícone da aba do navegador.'),
         ],
         'Cores' => [
             $s('color_brand', 'Cor principal', 'color'),
@@ -82,8 +88,8 @@ return [
 
     'blocks' => [
         'hero_slider' => ['label' => 'Banner principal', 'fields' => [
-            $items('Slides', [
-                $s('image', 'Imagem', 'image'),
+            $items('Banners', [
+                $img('image', 'Imagem', 1920, 1000, 'Mantenha o principal no centro: as laterais são cortadas em telas menores.'),
                 $t('title', 'Título'),
                 $t('text', 'Texto', 'textarea'),
                 $s('show_text', 'Mostrar título e texto', 'toggle'),
@@ -93,7 +99,7 @@ return [
             ]),
         ]],
         'testimonials' => ['label' => 'Depoimentos', 'fields' => [
-            $s('background', 'Imagem de fundo', 'image'),
+            $img('background', 'Imagem de fundo', 1920, 1000, 'Ocupa toda a largura e pode ser cortada nas bordas.'),
             $items('Depoimentos', [
                 $t('text', 'Texto', 'html'),
                 $t('name', 'Nome'),
@@ -106,9 +112,9 @@ return [
             $t('intro', 'Introdução', 'html'),
             $t('button', 'Texto do botão'),
             $s('link', 'Link do botão', 'url'),
-            $s('image_1', 'Imagem grande', 'image'),
-            $s('image_2', 'Imagem superior', 'image'),
-            $s('image_3', 'Imagem inferior', 'image'),
+            $img('image_1', 'Imagem grande', 960, 1780, 'Vertical. Ocupa a coluna alta ao lado do texto.'),
+            $img('image_2', 'Imagem superior', 960, 890, 'Quase quadrada.'),
+            $img('image_3', 'Imagem inferior', 960, 890, 'Quase quadrada.'),
             ['name' => 'documents', 'label' => 'Documentos (opcional)', 'type' => 'repeater', 'tr' => false, 'fields' => [
                 $t('label', 'Nome do documento'),
                 $s('file', 'Arquivo (PDF ou imagem)', 'file'),
@@ -118,18 +124,18 @@ return [
         ]],
         'faq' => ['label' => 'Perguntas frequentes', 'fields' => [
             $t('title', 'Título'),
-            $s('image', 'Imagem lateral', 'image'),
+            $img('image', 'Imagem lateral', 1000, 640, 'Exibida no tamanho original, à esquerda das perguntas: uma imagem maior invade o texto. Não aparece em telas menores.'),
             $items('Perguntas', [$t('title', 'Pergunta'), $t('body', 'Resposta', 'html')]),
         ]],
         'band' => ['label' => 'Faixa com logos', 'fields' => [
-            $s('background', 'Imagem de fundo', 'image'),
-            $items('Logos', [$s('image', 'Logo', 'image')]),
+            $img('background', 'Imagem de fundo', 1920, 1080, 'Fica fixa ao rolar a página, sob uma camada colorida.'),
+            $items('Logos', [$img('image', 'Logo', 300, 96, 'PNG com fundo transparente.')]),
         ]],
         'cards' => ['label' => 'Cards (carrossel ou grade)', 'fields' => [
             $t('title', 'Título'),
             $s('grid', 'Mostrar em grade, sem carrossel', 'toggle'),
             $items('Cards', [
-                $s('image', 'Imagem', 'image'),
+                $img('image', 'Imagem', 1000, 667, 'Use a mesma proporção em todos os cards para ficarem alinhados.'),
                 $t('badge', 'Etiqueta sobre a imagem'),
                 $t('by', 'Prefixo do autor (ex.: Por)'),
                 $s('author', 'Autor'),
@@ -150,7 +156,7 @@ return [
         'downloads' => ['label' => 'Grade de documentos', 'fields' => [
             $t('title', 'Título'),
             $items('Documentos', [
-                $s('image', 'Imagem', 'image'),
+                $img('image', 'Imagem', 450, 232, 'Horizontal, em PNG com fundo transparente.'),
                 $t('title', 'Título'),
                 $t('button', 'Texto do botão'),
                 $s('file', 'Arquivo', 'file'),

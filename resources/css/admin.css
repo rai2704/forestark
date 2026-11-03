@@ -5,4 +5,5 @@
 .ql-editor { min-height: 90px; background: #fff; }
 .lang-tabs { position: sticky; top: 0; z-index: 10; }
 .media-preview { max-height: 110px; border: 1px solid #dee2e6; border-radius: .25rem; background: #f8f9fa; }
+.media-thumb { max-height: 60px; max-width: 110px; border: 1px solid #dee2e6; border-radius: .25rem; background: #f8f9fa; }
 .flag-sm { width: 21px; height: 16px; border: 1px solid #dee2e6; }

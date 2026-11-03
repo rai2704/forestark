@@ -36,29 +36,6 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    const add = e.target.closest('[data-repeater-add]');
-    if (add) {
-        const box = add.closest('[data-repeater]');
-        const list = box.querySelector(':scope > [data-repeater-list]');
-        const html = box.querySelector(':scope > template').innerHTML.replaceAll('__i__', `n${Date.now()}`);
-        list.insertAdjacentHTML('beforeend', html);
-        const item = list.lastElementChild;
-        applyLang(item);
-        mountEditors(item);
-        return;
-    }
-
-    const item = e.target.closest('[data-repeater-item]');
-    if (item) {
-        if (e.target.closest('[data-remove]') && confirm('Remover este item?')) {
-            item.remove();
-        } else if (e.target.closest('[data-up]') && item.previousElementSibling) {
-            item.previousElementSibling.before(item);
-        } else if (e.target.closest('[data-down]') && item.nextElementSibling) {
-            item.nextElementSibling.after(item);
-        }
-    }
-
     const clear = e.target.closest('[data-clear-media]');
     if (clear) {
         const box = clear.closest('[data-media]');
@@ -82,6 +59,80 @@ document.addEventListener('submit', (e) => {
 document.querySelectorAll('.alert-auto-dismiss').forEach((el) => {
     setTimeout(() => window.bootstrap?.Alert.getOrCreateInstance(el).close(), 5000);
 });
+
+// Compara a imagem escolhida com o tamanho ideal antes de enviar
+document.addEventListener('change', (e) => {
+    const input = e.target;
+    if (!input.matches?.('input[type=file][data-ideal-w]')) {
+        return;
+    }
+    const out = input.closest('[data-media]')?.querySelector('[data-size-check]');
+    const file = input.files[0];
+    if (!out) {
+        return;
+    }
+    out.textContent = '';
+    if (!file) {
+        return;
+    }
+    const w = Number(input.dataset.idealW);
+    const h = Number(input.dataset.idealH);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+        const small = img.naturalWidth < w || img.naturalHeight < h;
+        const shape = Math.abs(img.naturalWidth / img.naturalHeight - w / h) > (w / h) * 0.1;
+        const size = `${img.naturalWidth} × ${img.naturalHeight} px`;
+        let text = `Imagem escolhida: ${size}. Tamanho adequado.`;
+        if (small) {
+            text = `Imagem escolhida: ${size}. Menor que o ideal, pode perder nitidez.`;
+        } else if (shape) {
+            text = `Imagem escolhida: ${size}. Proporção diferente da ideal, pode ser cortada.`;
+        }
+        out.textContent = text;
+        out.className = `form-text fw-semibold ${small || shape ? 'text-danger' : 'text-success'}`;
+        URL.revokeObjectURL(url);
+    };
+    img.src = url;
+});
+
+// Grade de permissões do usuário
+const perms = document.querySelector('[data-perms]');
+if (perms) {
+    const boxes = [...perms.querySelectorAll('.perm-cb')];
+    const modules = [...perms.querySelectorAll('.perm-mod-toggle')];
+    const all = perms.querySelector('#toggleAllPerms');
+    const allLabel = perms.querySelector('#toggleAllLabel');
+    const sync = () => {
+        modules.forEach((m) => {
+            m.checked = boxes.filter((b) => b.dataset.mod === m.dataset.mod).every((b) => b.checked);
+        });
+        all.checked = boxes.every((b) => b.checked);
+        allLabel.textContent = all.checked ? 'Desmarcar todos' : 'Marcar todos';
+    };
+    all.addEventListener('change', () => {
+        boxes.forEach((b) => { b.checked = all.checked; });
+        sync();
+    });
+    modules.forEach((m) => m.addEventListener('change', () => {
+        boxes.filter((b) => b.dataset.mod === m.dataset.mod).forEach((b) => { b.checked = m.checked; });
+        sync();
+    }));
+    boxes.forEach((b) => b.addEventListener('change', sync));
+    sync();
+
+    // Nível com acesso total dispensa a grade
+    const role = document.querySelector('[data-role-select]');
+    const fullIds = perms.dataset.fullIds.split(',');
+    const note = document.querySelector('[data-perms-full]');
+    const toggleGrid = () => {
+        const full = fullIds.includes(role.value);
+        perms.classList.toggle('d-none', full);
+        note.classList.toggle('d-none', !full);
+    };
+    role.addEventListener('change', toggleGrid);
+    toggleGrid();
+}
 
 applyLang();
 mountEditors();
