@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Mail\ConfirmSubscriptionMail;
 use App\Models\Subscriber;
+use App\Support\Captcha;
 use App\Support\Site;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class SubscriptionController extends Controller
 {
@@ -22,6 +24,12 @@ class SubscriptionController extends Controller
         $validator = validator($request->only('email'), ['email' => 'required|email|max:190']);
         if ($validator->fails()) {
             return $back->withErrors($validator, 'subscribe')->withInput($request->only('email'));
+        }
+
+        try {
+            Captcha::verify($request, 'subscribe');
+        } catch (ValidationException $e) {
+            return $back->withErrors($e->errors(), 'subscribe')->withInput($request->only('email'));
         }
 
         $subscriber = Subscriber::firstOrCreate(['email' => strtolower($request->input('email'))], ['locale' => app()->getLocale()]);

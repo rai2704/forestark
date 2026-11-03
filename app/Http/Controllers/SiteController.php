@@ -99,7 +99,7 @@ class SiteController extends Controller
             'other' => 'nullable|string|max:150',
             'message' => 'required|string|max:5000',
         ]);
-        Captcha::verify($request);
+        Captcha::verify($request, 'contact');
 
         $data['subject'] = ($data['other'] ?? null) ?: ($data['subject'] ?? null);
         unset($data['other']);

@@ -14,16 +14,21 @@ class Captcha
         return (bool) (config('services.turnstile.site_key') && config('services.turnstile.secret_key'));
     }
 
-    public static function question(): string
+    /** Pergunta do formulário; a mesma até ser respondida, para não invalidar outra aba aberta. */
+    public static function question(string $form): string
     {
+        $current = session("captcha.$form");
+        if ($current) {
+            return $current['q'];
+        }
         $a = random_int(1, 9);
         $b = random_int(1, 9);
-        session(['captcha_answer' => $a + $b]);
+        session(["captcha.$form" => ['q' => "$a + $b", 'a' => $a + $b]]);
 
         return "$a + $b";
     }
 
-    public static function verify(Request $request): void
+    public static function verify(Request $request, string $form): void
     {
         if (self::usesTurnstile()) {
             self::verifyTurnstile($request);
@@ -31,8 +36,8 @@ class Captcha
             return;
         }
 
-        $answer = session()->pull('captcha_answer');
-        if ($answer === null || ! is_numeric($request->input('captcha')) || (int) $request->input('captcha') !== $answer) {
+        $current = session()->pull("captcha.$form");
+        if (! $current || ! is_numeric($request->input('captcha')) || (int) $request->input('captcha') !== $current['a']) {
             throw ValidationException::withMessages(['captcha' => __('site.captcha_wrong')]);
         }
     }

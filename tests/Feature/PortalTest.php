@@ -143,11 +143,11 @@ class PortalTest extends TestCase
 
         $this->get('/contato')->assertOk()->assertSee('Quanto é')->assertSee('name="captcha"', false)->assertSee('Informações de Contato');
         $this->post('/contato-enviar', $payload)->assertSessionHasErrors('captcha');
-        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => '8'])->assertSessionHasErrors('captcha');
-        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => 'x'])->assertSessionHasErrors('captcha');
+        $this->withSession(['captcha.contact' => ['q' => '3 + 4', 'a' => 7]])->post('/contato-enviar', $payload + ['captcha' => '8'])->assertSessionHasErrors('captcha');
+        $this->withSession(['captcha.contact' => ['q' => '3 + 4', 'a' => 7]])->post('/contato-enviar', $payload + ['captcha' => 'x'])->assertSessionHasErrors('captcha');
         $this->assertSame(0, ContactMessage::count());
 
-        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', $payload + ['captcha' => '7'])->assertSessionHasNoErrors();
+        $this->withSession(['captcha.contact' => ['q' => '3 + 4', 'a' => 7]])->post('/contato-enviar', $payload + ['captcha' => '7'])->assertSessionHasNoErrors();
         $this->assertSame(1, ContactMessage::count());
         $this->post('/contato-enviar', $payload + ['captcha' => '7'])->assertSessionHasErrors('captcha');
     }
@@ -172,7 +172,7 @@ class PortalTest extends TestCase
         config(['mail.default' => 'smtp']);
         Mail::fake();
 
-        $response = $this->from('/en/contato')->post('/inscricao', ['email' => 'Ana@Example.com', 'locale' => 'en']);
+        $response = $this->withSession(['captcha.subscribe' => ['q' => '1 + 1', 'a' => 2]])->from('/en/contato')->post('/inscricao', ['email' => 'Ana@Example.com', 'locale' => 'en', 'captcha' => '2']);
         $response->assertRedirect(url('/en/contato').'#inscricao')->assertSessionHas('subscribe_ok', 'Almost there! We sent you an email to confirm your subscription.');
 
         $s = Subscriber::first();
@@ -185,13 +185,13 @@ class PortalTest extends TestCase
 
         // Reinscrição não reenvia nem revela que o e-mail já está na lista.
         Mail::fake();
-        $this->post('/inscricao', ['email' => 'ana@example.com', 'locale' => 'en'])->assertSessionHas('subscribe_ok', 'Almost there! We sent you an email to confirm your subscription.');
+        $this->withSession(['captcha.subscribe' => ['q' => '1 + 1', 'a' => 2]])->post('/inscricao', ['email' => 'ana@example.com', 'locale' => 'en', 'captcha' => '2'])->assertSessionHas('subscribe_ok', 'Almost there! We sent you an email to confirm your subscription.');
         Mail::assertNothingSent();
     }
 
     public function test_subscription_confirms_directly_without_smtp_and_blocks_bots(): void
     {
-        $this->post('/inscricao', ['email' => 'a@example.com', 'locale' => 'pt'])->assertSessionHas('subscribe_ok', 'Inscrição realizada. Obrigado!');
+        $this->withSession(['captcha.subscribe' => ['q' => '1 + 1', 'a' => 2]])->post('/inscricao', ['email' => 'a@example.com', 'locale' => 'pt', 'captcha' => '2'])->assertSessionHas('subscribe_ok', 'Inscrição realizada. Obrigado!');
         $this->assertNotNull(Subscriber::first()->confirmed_at);
 
         $this->post('/inscricao', ['email' => 'bot@example.com', 'website' => 'x']);
@@ -236,6 +236,47 @@ class PortalTest extends TestCase
         Mail::assertSentCount(2);
     }
 
+    public function test_subscription_requires_captcha_independent_from_contact(): void
+    {
+        $this->get('/contato')->assertOk()->assertSee('s-captcha', false)->assertSee('c-captcha', false);
+        $this->assertNotNull(session('captcha.subscribe'));
+        $this->assertNotNull(session('captcha.contact'));
+        $question = session('captcha.subscribe')['q'];
+        $this->get('/')->assertSee($question);
+
+        $this->from('/contato')->post('/inscricao', ['email' => 'a@example.com'])->assertRedirect(url('/contato').'#inscricao')->assertSessionHasErrors('captcha', null, 'subscribe');
+        $errors = ['subscribe' => ['messages' => ['captcha' => ['Erro do rodape']], 'format' => ':message']];
+        $page = $this->withSession(['errors' => $errors, '_old_input' => ['email' => 'a@example.com']])->get('/contato');
+        $page->assertSee('Erro do rodape');
+        $this->assertSame(1, substr_count($page->getContent(), 'value="a@example.com"'), 'o e-mail volta só no rodapé');
+        $this->withSession(['captcha.subscribe' => ['q' => '1 + 1', 'a' => 2]])->post('/inscricao', ['email' => 'a@example.com', 'captcha' => '3'])->assertSessionHasErrors('captcha', null, 'subscribe');
+        $this->assertSame(0, Subscriber::count());
+
+        // Responder um formulário não consome a pergunta do outro
+        $this->withSession(['captcha.subscribe' => ['q' => '1 + 1', 'a' => 2], 'captcha.contact' => ['q' => '3 + 4', 'a' => 7]])
+            ->post('/inscricao', ['email' => 'a@example.com', 'captcha' => '2'])->assertSessionHasNoErrors();
+        $this->assertSame(1, Subscriber::count());
+        $this->assertSame(7, session('captcha.contact')['a']);
+        $this->assertNull(session('captcha.subscribe'));
+    }
+
+    public function test_subscription_uses_turnstile_when_configured(): void
+    {
+        config(['services.turnstile.site_key' => 'site', 'services.turnstile.secret_key' => 'secret']);
+
+        $response = $this->get('/');
+        $response->assertSee('cf-turnstile', false)->assertDontSee('s-captcha', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'turnstile/v0/api.js'));
+        $contact = $this->get('/contato');
+        $this->assertSame(1, substr_count($contact->getContent(), 'turnstile/v0/api.js'));
+        $this->assertSame(2, substr_count($contact->getContent(), 'class="cf-turnstile'));
+
+        $this->post('/inscricao', ['email' => 'a@example.com'])->assertSessionHasErrors('captcha', null, 'subscribe');
+        Http::fake(['challenges.cloudflare.com/*' => Http::response(['success' => true])]);
+        $this->post('/inscricao', ['email' => 'a@example.com', 'cf-turnstile-response' => 'bom'])->assertSessionHasNoErrors();
+        $this->assertSame(1, Subscriber::count());
+    }
+
     public function test_footer_bar_is_fixed(): void
     {
         $this->get('/')->assertSee('data-footer-bar class="fixed inset-x-0 bottom-0', false);
@@ -266,7 +307,7 @@ class PortalTest extends TestCase
 
     public function test_contact_form_stores_message_and_blocks_bots(): void
     {
-        $this->withSession(['captcha_answer' => 7])->post('/contato-enviar', ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi', 'subject' => 'Vendas', 'locale' => 'en', 'captcha' => '7'])->assertSessionHas('contact_ok', 'Message sent. We will contact you soon.');
+        $this->withSession(['captcha.contact' => ['q' => '3 + 4', 'a' => 7]])->post('/contato-enviar', ['name' => 'Ana', 'email' => 'ana@example.com', 'message' => 'Oi', 'subject' => 'Vendas', 'locale' => 'en', 'captcha' => '7'])->assertSessionHas('contact_ok', 'Message sent. We will contact you soon.');
         $this->assertSame('en', ContactMessage::first()->locale);
 
         $this->post('/contato-enviar', ['name' => 'Bot', 'email' => 'b@example.com', 'message' => 'spam', 'website' => 'x']);

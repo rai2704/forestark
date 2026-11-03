@@ -45,7 +45,7 @@
                     <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px]">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div><label for="c-name" class="{{ $label }}">{{ $c['name'] }} {!! $required !!}</label><input id="c-name" type="text" name="name" required maxlength="150" value="{{ old('name') }}" class="{{ $input }}"></div>
-                        <div><label for="c-email" class="{{ $label }}">{{ $c['email'] }} {!! $required !!}</label><input id="c-email" type="email" name="email" required maxlength="190" value="{{ old('email') }}" class="{{ $input }}"></div>
+                        <div><label for="c-email" class="{{ $label }}">{{ $c['email'] }} {!! $required !!}</label><input id="c-email" type="email" name="email" required maxlength="190" value="{{ $errors->subscribe->any() ? '' : old('email') }}" class="{{ $input }}"></div>
                         <div><label for="c-phone" class="{{ $label }}">{{ $c['phone'] }}</label><input id="c-phone" type="text" name="phone" maxlength="40" value="{{ old('phone') }}" class="{{ $input }}"></div>
                         <div>
                             <label for="c-subject" class="{{ $label }}">{{ __('site.contact_subject') }}</label>
@@ -60,9 +60,8 @@
                         <div class="md:col-span-2">
                             @if ($turnstile)
                                 <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="{{ app()->getLocale() }}"></div>
-                                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
                             @else
-                                <label for="c-captcha" class="{{ $label }}">{{ __('site.captcha_question', ['q' => Captcha::question()]) }} {!! $required !!}</label>
+                                <label for="c-captcha" class="{{ $label }}">{{ __('site.captcha_question', ['q' => Captcha::question('contact')]) }} {!! $required !!}</label>
                                 <input id="c-captcha" type="text" inputmode="numeric" name="captcha" required maxlength="3" autocomplete="off" class="{{ $input }} max-w-[120px]">
                             @endif
                         </div>

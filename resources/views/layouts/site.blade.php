@@ -24,6 +24,7 @@
     <link href="https://fonts.bunny.net/css?family=open-sans:300,400,600,700|tinos:400,400i,700" rel="stylesheet">
     @include('partials.a11y-head')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (App\Support\Captcha::usesTurnstile())<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>@endif
     <style>:root{
         @foreach (['brand', 'header', 'footer', 'footer_bottom'] as $key)
             @if ($site['color_'.$key] ?? false) --color-{{ str_replace('_', '-', $key) }}: {{ $site['color_'.$key] }}; @endif
@@ -120,15 +121,25 @@
                 </div>
                 <div id="inscricao" class="mb-[45px] scroll-mt-20 lg:col-span-3">
                     <h6 class="mb-5 text-[20px] font-bold text-white">{{ $site['footer_subscribe'] }}</h6>
-                    <form action="{{ route('site.subscribe') }}" method="post" class="relative mb-5 h-12">
+                    <form action="{{ route('site.subscribe') }}" method="post" class="mb-5" data-subscribe-form>
                         @csrf
                         <input type="hidden" name="locale" value="{{ app()->getLocale() }}">
                         <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px]">
-                        <input type="email" name="email" required maxlength="190" value="{{ old('email') }}" placeholder="{{ $site['footer_placeholder'] }}" aria-label="{{ $site['footer_placeholder'] }}" class="size-full rounded-[10px] bg-[#2d2d2d] pr-[58px] pl-[15px] text-[#777] outline-none">
-                        <button aria-label="{{ $site['footer_subscribe'] }}" class="absolute inset-y-0 right-0 w-[55px] rounded-r-[10px] bg-brand text-[20px] text-white"><i class="fa fa-arrow"></i></button>
+                        <div class="relative h-12">
+                            <input type="email" name="email" required maxlength="190" value="{{ $errors->subscribe->any() ? old('email') : '' }}" placeholder="{{ $site['footer_placeholder'] }}" aria-label="{{ $site['footer_placeholder'] }}" class="size-full rounded-[10px] bg-[#2d2d2d] pr-[58px] pl-[15px] text-[#777] outline-none">
+                            <button aria-label="{{ $site['footer_subscribe'] }}" class="absolute inset-y-0 right-0 w-[55px] cursor-pointer rounded-r-[10px] bg-brand text-[20px] text-white"><i class="fa fa-arrow"></i></button>
+                        </div>
+                        @if (App\Support\Captcha::usesTurnstile())
+                            <div class="cf-turnstile mt-3" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="{{ app()->getLocale() }}" data-theme="dark" data-size="flexible"></div>
+                        @else
+                            <div class="mt-3 flex items-center gap-2">
+                                <label for="s-captcha" class="text-[14px] text-white">{{ __('site.captcha_question', ['q' => App\Support\Captcha::question('subscribe')]) }}</label>
+                                <input id="s-captcha" type="text" inputmode="numeric" name="captcha" required maxlength="3" autocomplete="off" class="h-9 w-16 rounded-md bg-[#2d2d2d] px-2 text-center text-white outline-none">
+                            </div>
+                        @endif
                     </form>
                     @if (session('subscribe_ok'))<p role="status" class="mb-3 rounded-md bg-white px-3 py-2 text-[14px] leading-snug font-semibold text-footer">{{ session('subscribe_ok') }}</p>@endif
-                    @error('email', 'subscribe')<p role="alert" class="mb-3 rounded-md bg-white px-3 py-2 text-[14px] leading-snug font-semibold text-red-700">{{ $message }}</p>@enderror
+                    @if ($errors->subscribe->any())<p role="alert" class="mb-3 rounded-md bg-white px-3 py-2 text-[14px] leading-snug font-semibold text-red-700">{{ $errors->subscribe->first() }}</p>@endif
                     <p>{{ $site['footer_subscribe_text'] }}</p>
                     @if ($whats)
                         <ul><li class="mt-[35px] mr-[5px] inline-block"><a href="{{ $whats }}" target="_blank" rel="noopener" aria-label="WhatsApp" class="block size-10 rounded-full bg-[#2d2d2d] text-center text-[13px] leading-10 text-[#777] transition hover:bg-brand hover:text-white"><i class="fa fa-whatsapp"></i></a></li></ul>
