@@ -520,6 +520,7 @@ class PortalTest extends TestCase
         $base = "/admin/conteudo/gallery/{$album->id}";
         $this->assertSame('campo-2026', $album->slug);
         $this->get('/galeria/campo-2026')->assertNotFound();
+        $this->get("$base/edit")->assertSee('fotos publicadas')->assertDontSee('Conteúdo completo');
 
         $evil = UploadedFile::fake()->createWithContent('shell.php', '<?php echo 1;');
         $this->post("$base/fotos", ['photos' => [UploadedFile::fake()->image('ok.jpg', 800, 600), $evil]])->assertSessionHasErrors('photos');

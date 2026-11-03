@@ -85,3 +85,6 @@
 @media (min-width: 992px) {
     .admin-content { padding-right: 4.5rem !important; }
 }
+
+/* Salvar e Cancelar lado a lado com o mesmo tamanho */
+.btn-moc:not(.btn-sm), .btn-moc-outline:not(.btn-sm), .btn-outline-secondary:not(.btn-sm), .btn-outline-danger:not(.btn-sm) { font-size: .875rem; padding: .45rem 1rem; }

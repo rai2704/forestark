@@ -21,7 +21,7 @@
                 <div class="mb-3">
                     <label class="form-label">Endereço da página</label>
                     <div class="input-group"><span class="input-group-text">/{{ $def['detail'] }}/</span><input name="slug" value="{{ old('slug', $entry->slug) }}" class="form-control" placeholder="gerado a partir do título"></div>
-                    <p class="form-text mb-0">A página de detalhe só é criada quando o campo "Conteúdo completo" está preenchido.</p>
+                    <p class="form-text mb-0">{{ ($def['photos'] ?? false) ? 'A página do álbum só aparece no site quando houver fotos publicadas.' : 'A página de detalhe só é criada quando o campo "Conteúdo completo" está preenchido.' }}</p>
                 </div>
             @endif
             <div class="form-check form-switch mb-3"><input type="checkbox" name="is_published" value="1" id="pub" @checked(old('is_published', $entry->is_published)) class="form-check-input"><label class="form-check-label" for="pub">Publicado no site</label></div>
