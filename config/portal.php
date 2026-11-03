@@ -21,6 +21,11 @@ return [
         'users' => 'Usuários e perfis',
     ],
 
+    'newsletter_fields' => [
+        $t('subject', 'Assunto'),
+        $t('body', 'Conteúdo', 'html'),
+    ],
+
     'page_fields' => [
         $t('title', 'Título da página'),
         $t('meta_description', 'Descrição para buscadores', 'textarea'),

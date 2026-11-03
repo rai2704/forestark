@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'newsletter_check' => 'Almost there! We sent you an email to confirm your subscription.',
+    'newsletter_confirm_subject' => 'Confirm your subscription to :name',
+    'newsletter_confirm_body' => 'We received a request to add this email to our mailing list. To confirm, click the button below.',
+    'newsletter_confirm_button' => 'Confirm subscription',
+    'newsletter_confirm_ignore' => 'If this was not you, ignore this message: nothing will be sent.',
+    'newsletter_confirmed_title' => 'Subscription confirmed',
+    'newsletter_confirmed' => 'Thank you! You will now receive our news by email.',
+    'newsletter_cancel_title' => 'Unsubscribe',
+    'newsletter_cancel_text' => 'Do you want to remove :email from our mailing list?',
+    'newsletter_cancel_button' => 'Unsubscribe',
+    'newsletter_cancelled' => 'Done. Your email was removed from our list.',
+    'newsletter_footer' => 'You received this email because you subscribed to :name.',
+    'newsletter_cancel_link' => 'Unsubscribe',
     'contact_intro' => 'Get in touch with the :name team.',
     'home' => 'Home',
     'contact_send' => 'Send your Message',

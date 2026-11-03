@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\AdminAccess;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('messages', Admin\MessageController::class)->only(['index', 'show', 'destroy']);
             Route::get('inscritos', [Admin\MessageController::class, 'subscribers'])->name('subscribers');
             Route::delete('inscritos/{subscriber}', [Admin\MessageController::class, 'destroySubscriber'])->name('subscribers.destroy');
+            Route::resource('newsletters', Admin\NewsletterController::class)->except('show');
+            Route::post('newsletters/{newsletter}/enviar', [Admin\NewsletterController::class, 'send'])->name('newsletters.send');
         });
 
         Route::middleware(AdminAccess::class.':users')->group(function () {
@@ -58,7 +61,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::post('contato-enviar', [SiteController::class, 'contact'])->middleware('throttle:5,1')->name('site.contact');
-Route::post('inscricao', [SiteController::class, 'subscribe'])->middleware('throttle:5,1')->name('site.subscribe');
+Route::post('inscricao', [SubscriptionController::class, 'store'])->middleware('throttle:5,1')->name('site.subscribe');
+Route::get('newsletter/confirmar/{token}', [SubscriptionController::class, 'confirm'])->middleware('throttle:20,1')->name('site.newsletter.confirm');
+Route::get('newsletter/cancelar/{token}', [SubscriptionController::class, 'unsubscribeForm'])->middleware('throttle:20,1')->name('site.newsletter.cancel');
+Route::post('newsletter/cancelar/{token}', [SubscriptionController::class, 'unsubscribe'])->middleware('throttle:20,1')->name('site.newsletter.unsubscribe');
 
 Route::get('sitemap.xml', [SiteController::class, 'sitemapXml'])->name('site.sitemap');
 

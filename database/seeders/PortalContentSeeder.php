@@ -67,7 +67,7 @@ class PortalContentSeeder extends Seeder
             'footer_where' => $this->l('Onde Estamos', 'Where we are', 'Dónde estamos'),
             'footer_links' => $this->l('Links Extras', 'Extra links', 'Enlaces adicionales'),
             'footer_comments' => $this->l('Comentário(s) recente(s)', 'Recent comment(s)', 'Comentario(s) reciente(s)'),
-            'footer_subscribe' => $this->l('Inscreva-nos', 'Subscribe', 'Suscríbase'),
+            'footer_subscribe' => $this->l('Inscreva-se', 'Subscribe', 'Suscríbase'),
             'footer_placeholder' => $this->l('Endereço de email', 'Email address', 'Correo electrónico'),
             'footer_subscribe_text' => $this->l(
                 'Inscreva-se em nossa lista de e-mails para receber as últimas atualizações e notícias.',

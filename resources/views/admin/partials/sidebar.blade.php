@@ -20,6 +20,7 @@
     <div class="sidebar-group-label"><i class="fas fa-inbox"></i>Mensagens</div>
     <a href="{{ route('admin.messages.index') }}" class="sidebar-nav-link{{ $act('admin.messages.*') }}"><i class="fas fa-envelope"></i> Contatos</a>
     <a href="{{ route('admin.subscribers') }}" class="sidebar-nav-link{{ $act('admin.subscribers*') }}"><i class="fas fa-user-plus"></i> Inscritos</a>
+    <a href="{{ route('admin.newsletters.index') }}" class="sidebar-nav-link{{ $act('admin.newsletters.*') }}"><i class="fas fa-paper-plane"></i> Newsletter</a>
 @endif
 
 @if ($u->canAccess('languages') || $u->canAccess('settings') || $u->canAccess('users'))

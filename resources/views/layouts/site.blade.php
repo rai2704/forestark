@@ -118,16 +118,17 @@
                 <div class="mb-[45px] lg:col-span-4">
                     <h6 class="mb-5 text-[20px] font-bold text-white">{{ $site['footer_comments'] }}</h6>
                 </div>
-                <div class="mb-[45px] lg:col-span-3">
+                <div id="inscricao" class="mb-[45px] scroll-mt-20 lg:col-span-3">
                     <h6 class="mb-5 text-[20px] font-bold text-white">{{ $site['footer_subscribe'] }}</h6>
-                    @if (session('subscribe_ok'))<p class="mb-3 text-white">{{ session('subscribe_ok') }}</p>@endif
                     <form action="{{ route('site.subscribe') }}" method="post" class="relative mb-5 h-12">
                         @csrf
                         <input type="hidden" name="locale" value="{{ app()->getLocale() }}">
-                        <input type="email" name="email" required placeholder="{{ $site['footer_placeholder'] }}" aria-label="{{ $site['footer_placeholder'] }}" class="size-full rounded-[10px] bg-[#2d2d2d] pr-[58px] pl-[15px] text-[#777] outline-none">
+                        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px]">
+                        <input type="email" name="email" required maxlength="190" value="{{ old('email') }}" placeholder="{{ $site['footer_placeholder'] }}" aria-label="{{ $site['footer_placeholder'] }}" class="size-full rounded-[10px] bg-[#2d2d2d] pr-[58px] pl-[15px] text-[#777] outline-none">
                         <button aria-label="{{ $site['footer_subscribe'] }}" class="absolute inset-y-0 right-0 w-[55px] rounded-r-[10px] bg-brand text-[20px] text-white"><i class="fa fa-arrow"></i></button>
                     </form>
-                    @error('email', 'subscribe')<p class="mb-3 text-white">{{ $message }}</p>@enderror
+                    @if (session('subscribe_ok'))<p role="status" class="mb-3 rounded-md bg-white px-3 py-2 text-[14px] leading-snug font-semibold text-footer">{{ session('subscribe_ok') }}</p>@endif
+                    @error('email', 'subscribe')<p role="alert" class="mb-3 rounded-md bg-white px-3 py-2 text-[14px] leading-snug font-semibold text-red-700">{{ $message }}</p>@enderror
                     <p>{{ $site['footer_subscribe_text'] }}</p>
                     @if ($whats)
                         <ul><li class="mt-[35px] mr-[5px] inline-block"><a href="{{ $whats }}" target="_blank" rel="noopener" aria-label="WhatsApp" class="block size-10 rounded-full bg-[#2d2d2d] text-center text-[13px] leading-10 text-[#777] transition hover:bg-brand hover:text-white"><i class="fa fa-whatsapp"></i></a></li></ul>

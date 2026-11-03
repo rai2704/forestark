@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ConfirmSubscriptionMail;
+use App\Mail\NewsletterMail;
 use App\Models\Block;
 use App\Models\ContactMessage;
 use App\Models\Language;
+use App\Models\Newsletter;
 use App\Models\Page;
 use App\Models\Role;
+use App\Models\Subscriber;
 use App\Models\User;
 use App\Support\Site;
 use Database\Seeders\PortalContentSeeder;
@@ -14,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
@@ -158,6 +163,75 @@ class PortalTest extends TestCase
         $this->assertSame(1, ContactMessage::count());
     }
 
+    public function test_subscription_requires_email_confirmation_when_mail_is_configured(): void
+    {
+        config(['mail.default' => 'smtp']);
+        Mail::fake();
+
+        $response = $this->from('/en/contato')->post('/inscricao', ['email' => 'Ana@Example.com', 'locale' => 'en']);
+        $response->assertRedirect(url('/en/contato').'#inscricao')->assertSessionHas('subscribe_ok', 'Almost there! We sent you an email to confirm your subscription.');
+
+        $s = Subscriber::first();
+        $this->assertSame('ana@example.com', $s->email);
+        $this->assertNull($s->confirmed_at);
+        Mail::assertSent(ConfirmSubscriptionMail::class, fn ($m) => $m->hasTo('ana@example.com') && str_contains($m->url, $s->token));
+
+        $this->get("/newsletter/confirmar/{$s->token}")->assertOk()->assertSee('Subscription confirmed');
+        $this->assertNotNull($s->fresh()->confirmed_at);
+
+        // Reinscrição não reenvia nem revela que o e-mail já está na lista.
+        Mail::fake();
+        $this->post('/inscricao', ['email' => 'ana@example.com', 'locale' => 'en'])->assertSessionHas('subscribe_ok', 'Almost there! We sent you an email to confirm your subscription.');
+        Mail::assertNothingSent();
+    }
+
+    public function test_subscription_confirms_directly_without_smtp_and_blocks_bots(): void
+    {
+        $this->post('/inscricao', ['email' => 'a@example.com', 'locale' => 'pt'])->assertSessionHas('subscribe_ok', 'Inscrição realizada. Obrigado!');
+        $this->assertNotNull(Subscriber::first()->confirmed_at);
+
+        $this->post('/inscricao', ['email' => 'bot@example.com', 'website' => 'x']);
+        $this->post('/inscricao', ['email' => 'invalido'])->assertSessionHasErrors('email', null, 'subscribe');
+        $this->assertSame(1, Subscriber::count());
+    }
+
+    public function test_unsubscribe_needs_post_and_removes_the_address(): void
+    {
+        $s = Subscriber::create(['email' => 'a@example.com', 'locale' => 'pt', 'confirmed_at' => now()]);
+
+        $this->get("/newsletter/cancelar/{$s->token}")->assertOk()->assertSee('a@example.com');
+        $this->assertSame(1, Subscriber::count());
+        $this->post("/newsletter/cancelar/{$s->token}")->assertOk()->assertSee('Seu e-mail foi removido');
+        $this->assertSame(0, Subscriber::count());
+        $this->get('/newsletter/cancelar/token-invalido')->assertNotFound();
+    }
+
+    public function test_newsletter_goes_once_to_confirmed_subscribers_in_their_language(): void
+    {
+        $this->actingAs($this->admin());
+        $this->post('/admin/newsletters', ['data' => ['subject' => ['pt' => 'Novidades', 'en' => 'News'], 'body' => ['pt' => '<p>Olá</p><script>x()</script>', 'en' => '<p>Hello</p>']]]);
+        $n = Newsletter::first();
+        $this->assertStringNotContainsString('script', $n->data['body']['pt']);
+
+        $this->post("/admin/newsletters/{$n->id}/enviar")->assertSessionHasErrors('email');
+        $this->assertNull($n->fresh()->sent_at);
+
+        config(['mail.default' => 'smtp']);
+        Mail::fake();
+        Subscriber::create(['email' => 'pt@example.com', 'locale' => 'pt', 'confirmed_at' => now()]);
+        $en = Subscriber::create(['email' => 'en@example.com', 'locale' => 'en', 'confirmed_at' => now()]);
+        Subscriber::create(['email' => 'pendente@example.com', 'locale' => 'pt']);
+
+        $this->post("/admin/newsletters/{$n->id}/enviar")->assertSessionHas('ok');
+        Mail::assertSentCount(2);
+        Mail::assertSent(NewsletterMail::class, fn ($m) => $m->hasTo('en@example.com') && $m->title === 'News' && str_contains($m->unsubscribeUrl, $en->token));
+        Mail::assertNotSent(NewsletterMail::class, fn ($m) => $m->hasTo('pendente@example.com'));
+        $this->assertSame(2, $n->fresh()->sent_count);
+
+        $this->post("/admin/newsletters/{$n->id}/enviar")->assertSessionHasErrors('email');
+        Mail::assertSentCount(2);
+    }
+
     public function test_footer_bar_is_fixed(): void
     {
         $this->get('/')->assertSee('data-footer-bar class="fixed inset-x-0 bottom-0', false);
@@ -207,7 +281,7 @@ class PortalTest extends TestCase
     public function test_every_admin_screen_renders(): void
     {
         $this->actingAs($this->admin());
-        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/users', '/admin/users/create', '/admin/roles', '/admin/roles/create', '/admin/perfil'] as $url) {
+        foreach (['/admin', '/admin/pages', '/admin/pages/create', '/admin/menus', '/admin/menus/create', '/admin/languages', '/admin/configuracoes', '/admin/messages', '/admin/inscritos', '/admin/newsletters', '/admin/newsletters/create', '/admin/users', '/admin/users/create', '/admin/roles', '/admin/roles/create', '/admin/perfil'] as $url) {
             $this->get($url)->assertOk();
         }
         foreach (Block::all() as $block) {

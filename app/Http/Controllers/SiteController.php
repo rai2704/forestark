@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ContactMessage;
 use App\Models\Page;
-use App\Models\Subscriber;
 use App\Support\Captcha;
 use App\Support\Site;
 use Illuminate\Http\Request;
@@ -71,15 +70,6 @@ class SiteController extends Controller
         $this->notify($message);
 
         return back()->with('contact_ok', Site::settings()['msg_contact_ok']);
-    }
-
-    public function subscribe(Request $request)
-    {
-        $this->applyLocale($request);
-        $data = $request->validateWithBag('subscribe', ['email' => 'required|email|max:190']);
-        Subscriber::firstOrCreate(['email' => strtolower($data['email'])], ['locale' => app()->getLocale()]);
-
-        return back()->with('subscribe_ok', Site::settings()['msg_subscribe_ok']);
     }
 
     private function applyLocale(Request $request): void

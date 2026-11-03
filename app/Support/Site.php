@@ -34,6 +34,12 @@ class Site
         return self::$settings[app()->getLocale()] ??= Content::resolve($fields, SiteSetting::current()->data ?? []);
     }
 
+    /** Com o mailer de log (padrão sem SMTP) nenhum e-mail chega ao destinatário. */
+    public static function canSendMail(): bool
+    {
+        return ! in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
     public static function flush(): void
     {
         self::$languages = null;

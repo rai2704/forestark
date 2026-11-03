@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'newsletter_check' => 'Quase lá! Enviamos um e-mail para você confirmar a inscrição.',
+    'newsletter_confirm_subject' => 'Confirme sua inscrição em :name',
+    'newsletter_confirm_body' => 'Recebemos um pedido para incluir este e-mail na nossa lista de novidades. Para confirmar, clique no botão abaixo.',
+    'newsletter_confirm_button' => 'Confirmar inscrição',
+    'newsletter_confirm_ignore' => 'Se não foi você, ignore esta mensagem: nada será enviado.',
+    'newsletter_confirmed_title' => 'Inscrição confirmada',
+    'newsletter_confirmed' => 'Obrigado! Você passará a receber nossas novidades por e-mail.',
+    'newsletter_cancel_title' => 'Cancelar inscrição',
+    'newsletter_cancel_text' => 'Deseja remover :email da nossa lista de e-mails?',
+    'newsletter_cancel_button' => 'Cancelar inscrição',
+    'newsletter_cancelled' => 'Pronto. Seu e-mail foi removido da nossa lista.',
+    'newsletter_footer' => 'Você recebeu este e-mail porque se inscreveu em :name.',
+    'newsletter_cancel_link' => 'Cancelar inscrição',
     'contact_intro' => 'Entre em contato com a equipe :name.',
     'home' => 'Início',
     'contact_send' => 'Envie sua Mensagem',
